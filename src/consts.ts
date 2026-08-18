@@ -6,7 +6,6 @@ export const SITE_URL = 'https://meth04.github.io';
 export const AUTHOR = 'meth04';
 export const AUTHOR_BIO =
   'I write about the mathematics behind machine learning and about ideas from calculus, probability and linear algebra that deserve a clearer explanation than they usually get.';
-export const LOCALE = 'en';
 
 export const NAV: Array<{ href: string; label: string }> = [
   { href: '/blog/', label: 'Writing' },

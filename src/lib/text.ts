@@ -51,7 +51,8 @@ export function vocabulary(text: string): string {
   const words = new Set(
     text
       .toLowerCase()
-      .split(/[^a-z0-9'’]+/)
+      // Unicode-aware: an ASCII-only split throws away every Vietnamese word.
+      .split(/[^\p{L}\p{N}'’]+/u)
       .filter((word) => word.length > 1),
   );
   return [...words].sort().join(' ');

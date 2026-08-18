@@ -1,18 +1,21 @@
 ---
+import { DEFAULT_LANG, type Lang } from '../../lib/i18n';
+
 interface Props {
   type?: 'note' | 'insight' | 'warning' | 'misconception';
   title?: string;
+  /** Language of the surrounding article, used when no title is given. */
+  lang?: Lang;
 }
-const { type = 'note', title } = Astro.props;
-const defaultTitle: Record<string, string> = {
-  note: 'Note',
-  insight: 'Idea',
-  warning: 'Careful',
-  misconception: 'Misconception',
+const { type = 'note', title, lang = DEFAULT_LANG } = Astro.props;
+
+const DEFAULT_TITLE: Record<Lang, Record<string, string>> = {
+  en: { note: 'Note', insight: 'Idea', warning: 'Careful', misconception: 'Misconception' },
+  vi: { note: 'Ghi chú', insight: 'Ý tưởng', warning: 'Lưu ý', misconception: 'Hiểu lầm' },
 };
 ---
 
 <aside class={`block block--${type}`}>
-  <p class="block__head"><span class="block__kind">{title ?? defaultTitle[type]}</span></p>
+  <p class="block__head"><span class="block__kind">{title ?? DEFAULT_TITLE[lang][type]}</span></p>
   <div class="block__body"><slot /></div>
 </aside>

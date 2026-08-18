@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getArticles, collectTopics, collectTags } from '../../lib/content';
+import { getArticles, collectTopics, collectTags, collapseTranslations } from '../../lib/content';
 
-const articles = await getArticles();
+// Counts describe pieces of writing, not translated copies of them.
+const articles = collapseTranslations(await getArticles());
 const topics = collectTopics(articles);
 const tags = collectTags(articles);
 ---

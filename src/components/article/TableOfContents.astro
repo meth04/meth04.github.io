@@ -3,112 +3,264 @@ import type { MarkdownHeading } from 'astro';
 
 interface Props {
   headings: MarkdownHeading[];
+  /** Localized heading for the summary line. */
+  label?: string;
+  /** Localized "N sections" hint, given the count. */
+  countLabel?: (count: number) => string;
 }
-const { headings } = Astro.props;
-const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const { headings, label = 'Contents', countLabel = (n: number) => `${n} sections` } = Astro.props;
+const items = headings
+  .filter((h) => h.depth === 2 || h.depth === 3)
+  // Guard against an anchor marker leaking into the heading text.
+  .map((h) => ({ ...h, text: h.text.replace(/^#\s*/, '') }));
+const sectionCount = items.filter((h) => h.depth === 2).length;
 ---
 
 {
   items.length > 2 && (
-    <details class="toc" id="toc">
-      <summary>Contents</summary>
-      <nav aria-label="Table of contents">
-        <ol>
-          {items.map((heading) => (
-            <li class={heading.depth === 3 ? 'sub' : undefined}>
-              <a href={`#${heading.slug}`} set:html={heading.text} />
-            </li>
-          ))}
-        </ol>
-      </nav>
-    </details>
+    <div class="toc-wrap">
+      <details class="toc" id="toc">
+        <summary class="toc__summary">
+          <span class="toc__label">{label}</span>
+          <span class="toc__count">{countLabel(sectionCount)}</span>
+          <svg class="toc__chevron" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+            <path
+              d="M4.5 2.5 8 6l-3.5 3.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </summary>
+        <nav class="toc__nav" aria-label={label}>
+          <ol class="toc__list">
+            {items.map((heading) => (
+              <li class="toc__item" data-depth={heading.depth}>
+                <a href={`#${heading.slug}`} set:html={heading.text} />
+              </li>
+            ))}
+          </ol>
+        </nav>
+      </details>
+    </div>
   )
 }
 
+<script>
+  // Mark the section the reader is currently in. IntersectionObserver only, so
+  // there is no scroll handler and nothing runs while the page is still.
+  const toc = document.getElementById('toc');
+  if (toc) {
+    const links = [...toc.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')];
+    const byId = new Map(links.map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
+    const headings = [
+      ...document.querySelectorAll<HTMLElement>('.prose h2[id], .prose h3[id]'),
+    ].filter((h) => byId.has(h.id));
+
+    if (headings.length > 0) {
+      let current: HTMLAnchorElement | null = null;
+      const setCurrent = (link: HTMLAnchorElement | undefined) => {
+        if (!link || link === current) return;
+        current?.removeAttribute('aria-current');
+        link.setAttribute('aria-current', 'true');
+        current = link;
+      };
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) setCurrent(byId.get((entry.target as HTMLElement).id));
+          }
+        },
+        // Only headings in a band near the top of the viewport count as
+        // "current". The band starts above the sticky header so that a heading
+        // jumped to from this list — which lands just under the header — is
+        // inside it; when a long section fills the screen the previous choice
+        // simply stays.
+        { rootMargin: '-56px 0px -70% 0px' },
+      );
+      for (const heading of headings) observer.observe(heading);
+
+      // On narrow screens the list is a disclosure: close it after a jump so the
+      // reader lands on the section instead of on a screen full of links.
+      const marginLayout = window.matchMedia('(min-width: 1460px)');
+      for (const link of links) {
+        link.addEventListener('click', () => {
+          if (!marginLayout.matches) toc.removeAttribute('open');
+        });
+      }
+    }
+  }
+</script>
+
 <style>
+  /* ---------- Placement ---------- */
+  .toc-wrap {
+    /* Matches the reading column, so the box lines up with the prose instead of
+       running to the edges of the screen. */
+    max-width: calc(var(--w-prose) + var(--gutter) * 2);
+    margin-inline: auto;
+    margin-block: 0 var(--s-6);
+    padding-inline: var(--gutter);
+  }
+
   .toc {
-    font-family: var(--f-sans);
-    font-size: var(--fs-sm);
     border: var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     background: var(--c-bg-raised);
-    padding: var(--s-3) var(--s-4);
+    font-family: var(--f-sans);
   }
-  .toc summary {
+
+  /* ---------- Summary ---------- */
+  .toc__summary {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    min-height: 2.75rem;
+    padding: var(--s-2) var(--s-4);
     cursor: pointer;
-    font-weight: 600;
     color: var(--c-ink-soft);
-    list-style-position: outside;
-  }
-  .toc summary::marker {
-    color: var(--c-ink-faint);
-  }
-  .toc ol {
     list-style: none;
-    margin: var(--s-3) 0 0;
+  }
+  .toc__summary::-webkit-details-marker {
+    display: none;
+  }
+  .toc__summary:hover {
+    color: var(--c-ink);
+  }
+  .toc__summary:focus-visible {
+    outline: var(--ring);
+    outline-offset: -2px;
+    border-radius: var(--radius-lg);
+  }
+  .toc__label {
+    font-size: var(--fs-sm);
+    font-weight: 650;
+    letter-spacing: 0.01em;
+  }
+  .toc__count {
+    font-size: var(--fs-xs);
+    color: var(--c-ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .toc__chevron {
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-inline-start: auto;
+    color: var(--c-ink-faint);
+    transition: transform 160ms var(--ease);
+  }
+  .toc[open] .toc__chevron {
+    transform: rotate(90deg);
+  }
+
+  /* ---------- List ---------- */
+  .toc__nav {
+    border-top: var(--border);
+    padding: var(--s-3) var(--s-4) var(--s-4);
+  }
+  .toc__list {
+    list-style: none;
+    margin: 0;
     padding: 0;
     counter-reset: toc;
-    max-height: 45vh;
+    max-height: min(50vh, 24rem);
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
-  .toc li {
+  .toc__item {
     counter-increment: toc;
     line-height: 1.4;
   }
-  .toc li + li {
-    margin-block-start: 0.55rem;
+  .toc__item + .toc__item {
+    margin-block-start: 0.15rem;
   }
-  .toc li.sub {
-    padding-inline-start: 1.1rem;
-    font-size: 0.94em;
-  }
-  .toc a {
+  .toc__item > a {
+    display: grid;
+    grid-template-columns: 1.7rem 1fr;
+    align-items: baseline;
+    padding-block: 0.4rem;
+    font-size: var(--fs-sm);
     color: var(--c-ink-muted);
     text-decoration: none;
-    display: inline-block;
+    border-radius: 3px;
   }
-  .toc a:hover {
+  .toc__item > a::before {
+    content: counter(toc, decimal-leading-zero);
+    font-size: var(--fs-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--c-ink-faint);
+  }
+  .toc__item[data-depth='3'] > a {
+    grid-template-columns: 2.7rem 1fr;
+    font-size: 0.82rem;
+  }
+  .toc__item[data-depth='3'] > a::before {
+    content: '—';
+    text-align: end;
+    padding-inline-end: 0.45rem;
+  }
+  .toc__item > a:hover {
     color: var(--c-accent-deep);
-    text-decoration: underline;
-    text-underline-offset: 0.18em;
+  }
+  /* The section the reader is currently in. */
+  .toc__item > a[aria-current='true'] {
+    color: var(--c-ink);
+    font-weight: 600;
+  }
+  .toc__item > a[aria-current='true']::before {
+    color: var(--c-accent);
   }
 
-  /* On very wide screens the contents sit in the right margin, leaving the
-     reading column exactly centred. */
+  /* Comfortable touch targets while the list is a disclosure on a phone. */
+  @media (max-width: 1459px) {
+    .toc__item > a {
+      padding-block: 0.75rem;
+    }
+  }
+
+  /* ---------- Wide screens: the list moves into the right margin ---------- */
   @media (min-width: 1460px) {
-    .toc {
+    .toc-wrap {
       position: absolute;
       top: 0;
       height: 100%;
       left: calc(50% + var(--w-wide) / 2 + 2rem);
-      width: 14rem;
-      border: 0;
-      border-left: var(--border);
-      border-radius: 0;
-      background: none;
-      padding: 0 0 0 var(--s-4);
+      width: 15rem;
+      max-width: none;
+      margin: 0;
+      padding: 0;
       pointer-events: none;
     }
-    .toc > * {
-      pointer-events: auto;
-    }
-    .toc summary {
-      display: none;
-    }
-    .toc nav {
+    .toc {
       position: sticky;
       top: 5.5rem;
-      max-height: calc(100vh - 8rem);
-      overflow-y: auto;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      pointer-events: auto;
     }
-    .toc ol {
-      margin-top: 0;
-      max-height: none;
-      overflow: visible;
+    .toc__summary {
+      display: none;
+    }
+    .toc__nav {
+      border-top: 0;
+      border-left: var(--border);
+      padding: 0 0 0 var(--s-4);
+    }
+    .toc__list {
+      max-height: calc(100vh - 9rem);
+    }
+    /* A quiet marker for the current section, in place of the box. */
+    .toc__item > a[aria-current='true'] {
+      box-shadow: -1px 0 0 0 var(--c-accent);
     }
   }
+
   @media print {
-    .toc {
+    .toc-wrap {
       display: none;
     }
   }

@@ -2,10 +2,12 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ArticleCard from '../components/article/ArticleCard.astro';
 import ParticleField from '../components/visualization/ParticleField.astro';
-import { getArticles, collectTopics, articleUrl } from '../lib/content';
+import { getArticles, collectTopics, collapseTranslations, articleUrl } from '../lib/content';
 import { SITE_TITLE, SITE_DESCRIPTION, AUTHOR } from '../consts';
 
-const articles = await getArticles();
+const everything = await getArticles();
+// A translated article is one piece of writing, so the homepage lists it once.
+const articles = collapseTranslations(everything);
 const featured = articles.find((a) => a.data.featured) ?? articles[0];
 const recent = articles.filter((a) => a.id !== featured?.id).slice(0, 4);
 const topics = collectTopics(articles);

@@ -1,7 +1,8 @@
 ---
 import type { Article } from '../../lib/content';
 import { articleUrl } from '../../lib/content';
-import { formatDate, isoDate, readingTimeMinutes } from '../../lib/text';
+import { isoDate, readingTimeMinutes } from '../../lib/text';
+import { formatDateIn, t, LANGUAGE_BADGE, LANGUAGE_NAME } from '../../lib/i18n';
 
 interface Props {
   article: Article;
@@ -9,21 +10,32 @@ interface Props {
   size?: 'default' | 'lead';
   /** Heading level, so the card fits the surrounding document outline. */
   level?: 2 | 3;
+  /** Show the language badge. Off on single-language listings. */
+  showLanguage?: boolean;
 }
-const { article, size = 'default', level = 3 } = Astro.props;
+const { article, size = 'default', level = 3, showLanguage = true } = Astro.props;
 const Heading = `h${level}` as 'h2' | 'h3';
-const { title, description, pubDate, topics } = article.data;
+const { title, description, pubDate, topics, lang } = article.data;
 const minutes = readingTimeMinutes(article.body ?? '');
+const strings = t(lang);
 ---
 
 <article class:list={['card', size === 'lead' && 'card--lead']}>
   <Heading class="card__title">
-    <a href={articleUrl(article)}>{title}</a>
+    <a href={articleUrl(article)} lang={lang} hreflang={lang}>{title}</a>
+    {
+      showLanguage && (
+        <span class="card__lang" title={LANGUAGE_NAME[lang]}>
+          <span class="visually-hidden">{LANGUAGE_NAME[lang]}</span>
+          <span aria-hidden="true">{LANGUAGE_BADGE[lang]}</span>
+        </span>
+      )
+    }
   </Heading>
   <p class="card__meta">
-    <time datetime={isoDate(pubDate)}>{formatDate(pubDate)}</time>
+    <time datetime={isoDate(pubDate)}>{formatDateIn(pubDate, lang)}</time>
     <span aria-hidden="true">·</span>
-    <span>{minutes} min read</span>
+    <span>{strings.minRead(minutes)}</span>
     {
       topics.length > 0 && (
         <>
@@ -33,7 +45,7 @@ const minutes = readingTimeMinutes(article.body ?? '');
       )
     }
   </p>
-  <p class="card__desc">{description}</p>
+  <p class="card__desc" lang={lang}>{description}</p>
 </article>
 
 <style>
@@ -48,6 +60,30 @@ const minutes = readingTimeMinutes(article.body ?? '');
     line-height: 1.25;
     letter-spacing: -0.01em;
     text-wrap: balance;
+  }
+  .card__lang {
+    display: inline-block;
+    vertical-align: 0.22em;
+    margin-inline-start: 0.55rem;
+    font-family: var(--f-sans);
+    font-size: 0.6em;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--c-ink-muted);
+    border: 1px solid var(--c-rule-strong);
+    border-radius: 3px;
+    padding: 0.1em 0.4em;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
   }
   .card__title a {
     text-decoration: none;

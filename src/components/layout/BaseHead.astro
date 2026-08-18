@@ -1,5 +1,6 @@
 ---
-import { SITE_TITLE, SITE_DESCRIPTION, AUTHOR, LOCALE } from '../../consts';
+import { SITE_TITLE, SITE_DESCRIPTION, AUTHOR } from '../../consts';
+import { DEFAULT_LANG, LANGUAGE_TAG, type Lang } from '../../lib/i18n';
 
 interface Props {
   title: string;
@@ -14,6 +15,10 @@ interface Props {
   noindex?: boolean;
   /** Schema.org structured data, serialized into a JSON-LD script. */
   jsonLd?: Record<string, unknown>;
+  /** Language of the page's main content. */
+  lang?: Lang;
+  /** Other language versions of this page, emitted as hreflang alternates. */
+  alternates?: Array<{ lang: Lang; href: string }>;
 }
 
 const {
@@ -26,6 +31,8 @@ const {
   imageAlt = SITE_TITLE,
   noindex = false,
   jsonLd,
+  lang = DEFAULT_LANG,
+  alternates = [],
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
@@ -52,7 +59,25 @@ const fullTitle = title === SITE_TITLE ? title : `${title} — ${SITE_TITLE}`;
 <meta property="og:title" content={fullTitle} />
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonical} />
-<meta property="og:locale" content={LOCALE === 'en' ? 'en_GB' : LOCALE} />
+<meta property="og:locale" content={lang === 'vi' ? 'vi_VN' : 'en_GB'} />
+{
+  alternates.map((alt) => (
+    <link
+      rel="alternate"
+      hreflang={LANGUAGE_TAG[alt.lang]}
+      href={new URL(alt.href, Astro.site).href}
+    />
+  ))
+}
+{
+  alternates.length > 0 && (
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href={new URL(Astro.url.pathname, Astro.site).href}
+    />
+  )
+}
 <meta property="og:image" content={ogImage} />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />

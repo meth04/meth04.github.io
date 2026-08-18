@@ -53,7 +53,10 @@ export default defineConfig({
             behavior: 'prepend',
             test: ['h2', 'h3', 'h4'],
             properties: { class: 'heading-anchor', 'aria-hidden': 'true', tabindex: -1 },
-            content: { type: 'text', value: '#' },
+            // Empty: the "#" is drawn by CSS, so it never becomes part of the
+            // heading's text and cannot leak into the table of contents or into
+            // whatever a reader copies.
+            content: [],
           },
         ],
       ],

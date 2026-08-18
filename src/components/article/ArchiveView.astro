@@ -1,0 +1,101 @@
+---
+/**
+ * The article archive, shared by /blog/ and the per-language archives so that
+ * both stay identical apart from the selected filter.
+ */
+import ArticleCard from './ArticleCard.astro';
+import LanguageFilter from './LanguageFilter.astro';
+import { collectTopics, type Article } from '../../lib/content';
+import { LANGUAGE_NAME, type Lang } from '../../lib/i18n';
+
+interface Props {
+  /** Articles to list, already filtered. */
+  articles: Article[];
+  /** All articles, used for the filter counts. */
+  all: Article[];
+  active: Lang | 'all';
+}
+
+const { articles, all, active } = Astro.props;
+const topics = collectTopics(articles);
+const counts = new Map<Lang, number>();
+for (const article of all) {
+  counts.set(article.data.lang, (counts.get(article.data.lang) ?? 0) + 1);
+}
+
+const heading = active === 'all' ? 'Writing' : `Writing — ${LANGUAGE_NAME[active]}`;
+const lede =
+  articles.length === 0
+    ? 'Nothing here yet in this language.'
+    : `${articles.length} article${articles.length === 1 ? '' : 's'}, newest first. Each one is written to be read straight through, with the visualizations there to be played with rather than watched.`;
+---
+
+<div class="page index">
+  <header class="index__head">
+    <h1>{heading}</h1>
+    <p class="lede">{lede}</p>
+    <div class="index__filter">
+      <LanguageFilter active={active} counts={counts} />
+    </div>
+    {
+      topics.length > 0 && (
+        <ul class="tag-list index__topics">
+          {topics.map((topic) => (
+            <li>
+              <a class="tag" href={`/topics/${topic.slug}/`}>
+                {topic.label} <span aria-hidden="true">({topic.count})</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </header>
+
+  {
+    articles.length === 0 ? (
+      <p class="empty">
+        No articles in this language yet — <a href="/blog/">see every article</a> instead.
+      </p>
+    ) : (
+      <div class="index__list">
+        {articles.map((article) => (
+          <ArticleCard article={article} level={2} />
+        ))}
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .index {
+    padding-block: var(--s-7) var(--s-8);
+    max-width: calc(var(--w-wide) + var(--gutter) * 2);
+  }
+  .index__head h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(1.8rem, 1.4rem + 2vw, 2.6rem);
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+  .lede {
+    margin-block-start: var(--s-4);
+    font-size: var(--fs-md);
+    color: var(--c-ink-soft);
+    max-width: 38em;
+    line-height: 1.6;
+  }
+  .index__filter {
+    margin-block-start: var(--s-5);
+  }
+  .index__topics {
+    margin-block-start: var(--s-4);
+  }
+  .index__list {
+    margin-block-start: var(--s-7);
+  }
+  .empty {
+    margin-block-start: var(--s-6);
+    color: var(--c-ink-muted);
+  }
+</style>

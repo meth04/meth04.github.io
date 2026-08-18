@@ -117,3 +117,105 @@
     padding-inline-start: var(--s-4);
   }
 }
+
+/* ---------- Exercises ---------- */
+.exercise {
+  border: var(--border);
+  border-left: 3px solid var(--c-accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--c-bg-raised);
+  padding: var(--s-5);
+}
+.exercise > * + * {
+  margin-block-start: var(--s-4);
+}
+.exercise__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  align-items: baseline;
+  font-family: var(--f-sans);
+  margin-block-end: var(--s-2) !important;
+}
+.exercise__number {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-accent-deep);
+}
+.exercise__level {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  color: var(--c-ink-muted);
+  border: var(--border);
+  border-radius: 999px;
+  padding: 0.1em 0.7em;
+}
+.exercise__title {
+  font-family: var(--f-sans);
+  font-weight: 650;
+  font-size: var(--fs-md);
+  color: var(--c-ink);
+  margin-block-start: 0 !important;
+}
+.exercise__solution {
+  border-top: var(--border);
+  padding-block-start: var(--s-4);
+}
+.exercise__solution > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-accent-deep);
+  cursor: pointer;
+  /* Replaces the default triangle, which hangs outside the box's padding. */
+  list-style: none;
+}
+.exercise__solution > summary::-webkit-details-marker {
+  display: none;
+}
+.exercise__solution > summary::before {
+  content: '';
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 160ms var(--ease);
+}
+.exercise__solution[open] > summary::before {
+  transform: rotate(45deg);
+}
+.exercise__solution > summary:focus-visible {
+  outline: var(--ring);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.exercise__solution[open] > summary {
+  color: var(--c-ink-muted);
+  margin-block-end: var(--s-4);
+}
+.exercise__solution-body > * + * {
+  margin-block-start: var(--s-4);
+}
+
+@media (max-width: 480px) {
+  .exercise {
+    padding: var(--s-4);
+  }
+}
+@media print {
+  .exercise__solution[open] > summary,
+  .exercise__solution > summary {
+    color: var(--c-ink-muted);
+  }
+  .exercise__solution > .exercise__solution-body {
+    display: block !important;
+  }
+}

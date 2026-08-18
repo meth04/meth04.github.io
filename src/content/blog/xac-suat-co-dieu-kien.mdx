@@ -1,0 +1,789 @@
+---
+title: 'Xác suất có điều kiện'
+description: ''
+lang: vi
+pubDate: 2026-08-24
+tags:
+  - xác suất có điều kiện
+  - định lý Bayes
+  - tỉ lệ nền
+  - Monty Hall
+  - nghịch lý Simpson
+  - Bayes
+topics:
+  - probability
+  - statistics
+draft: false
+featured: false
+---
+
+import InteractiveFigure from '../../components/visualization/InteractiveFigure.astro';
+import Callout from '../../components/article/Callout.astro';
+import Definition from '../../components/article/Definition.astro';
+import Theorem from '../../components/article/Theorem.astro';
+import Proof from '../../components/article/Proof.astro';
+import Equation from '../../components/article/Equation.astro';
+import EqRef from '../../components/article/EqRef.astro';
+import Exercise from '../../components/article/Exercise.astro';
+
+Một người đi xét nghiệm một căn bệnh mà cứ 200 người thì có 1 người mắc. Xét nghiệm rất tốt:
+nếu có bệnh, máy báo dương tính với xác suất 99%; nếu không có bệnh, máy báo âm tính với xác suất
+95%. Kết quả trả về: **dương tính**. Khả năng người đó thật sự có bệnh là bao nhiêu?
+
+Bài viết này xây dựng khái niệm về xác suất một cách đầy đủ nhất, từ định lý Bayes, odds, tần suất (base rate), bài toán Monty Hall. Bài viết này được viết dựa trên kinh nghiệm và kiến thức từ 1 cá nhân, mọi thắc mắc sẽ được giải đáp 1 cách đầy thiện chí.
+
+Để hiểu rõ nội dung của bài viết này chúng ta cần hiểu rõ một số khái niệm:
+
+## Không gian mẫu và biến cố
+
+<Definition lang="vi" term="Không gian mẫu và biến cố">
+**Không gian mẫu** $\Omega$ là tập hợp tất cả các kết quả có thể xảy ra của một phép thử
+ngẫu nhiên. Một **biến cố** là một tập con $A \subseteq \Omega$. Khi mọi kết quả đều có khả năng xảy ra như nhau
+và $\Omega$ là hữu hạn,
+$$
+P(A) = \frac{|A|}{|\Omega|},
+$$
+tức là "xác suất để xảy ra biến cố A bằng tất cả các trường hợp dẫn đến A chia cho tất cả các trường hợp có thể xảy ra".
+</Definition>
+
+Ví dụ: gieo hai con xúc xắc cân đối, độc lập. Khi
+đó $\Omega$ gồm $6 \times 6 = 36$ với mỗi cặp $(d_1, d_2)$, mỗi cặp có xác suất $1/36$. Biến cố
+"tổng ít nhất bằng 9" là một tập con gồm các phần tử sao cho $d_1 + d_2 = 9$.
+
+## Điều kiện là gì?
+
+Giả sử ai đó hỏi xác suất **tổng không nhỏ hơn 9**, nhưng có ít nhất
+một mặt 6 là bao nhiêu.
+
+Thông tin ấy không làm thay đổi hai con xúc xắc. Nó làm thay đổi *tập hợp các kết quả còn
+có thể xảy ra*: các trường hợp không thoả điều kiện bị loại bỏ, và ta chỉ còn làm việc với các trường hợp còn
+lại.
+
+<InteractiveFigure
+  id="fig-luoi-xuc-xac"
+  label="Hình 1"
+  title="Lấy điều kiện là loại bỏ bớt kết quả rồi đếm lại"
+  hint="Chọn biến cố A và B ở phía dưới."
+  viz="dice-grid"
+  lang="vi"
+  reserve={[630, 900]}
+>
+  <strong>Chú ý.</strong> Các ô được highlight là $A \cap B$, ô có viền xanh là $B$. Khi click
+  “Chỉ giữ lại B”, các ô không thỏa mãn điều kiện $B$ mờ đi: mẫu số không còn là 36 nữa mà là $|B|$. Với
+  $A$ = “có ít nhất một mặt 6” và $B$ = “tổng ≥ 9”, ta có $P(A) = 11/36 \approx 0{,}306$
+  nhưng $P(A \mid B) = 7/10 = 0{,}7$. Cùng một biến cố $A$, hai mẫu số khác nhau.
+</InteractiveFigure>
+
+Lưu ý rằng cả tử số lẫn mẫu số đều thay đổi. Câu hỏi không còn là "bao nhiêu trong 36" nữa,
+mà hỏi "bao nhiêu phần trong 10". 
+
+## Định nghĩa
+
+<Definition lang="vi" term="Xác suất có điều kiện">
+Cho hai biến cố $A$ và $B$ với $P(B) > 0$. **Xác suất của $A$ với điều kiện $B$** là
+$$
+P(A \mid B) \;=\; \frac{P(A \cap B)}{P(B)} .
+$$
+Nếu $P(B) = 0$ thì biểu thức không xác định: không thể chia cho 0, và cũng không có
+cách nào "quan sát" một biến cố có xác suất bằng 0 rồi cập nhật theo nó.
+</Definition>
+
+Tử số $P(A \cap B)$ là phần của $A$
+còn sống sót sau khi biết $B$ xảy ra. Mẫu số $P(B)$ không gian mẫu với điều kiện B, để tổng xác suất trên không gian mẫu mới này lại bằng 1. 
+Vì thế mọi công thức quen thuộc vẫn dùng được bên
+trong không gian mẫu đã lấy điều kiện, chẳng hạn
+$P(A^{c} \mid B) = 1 - P(A \mid B)$.
+
+<InteractiveFigure
+  id="fig-dien-tich"
+  label="Hình 2"
+  title="Chia cho P(B) là kéo giãn phần còn lại cho đầy hình vuông"
+  hint="Kéo các thanh trượt, rồi bấm “Điều kiện theo B” để xem phép chuẩn hoá."
+  viz="prob-area"
+  lang="vi"
+  reserve={[690, 900]}
+>
+  <strong>Chú ý.</strong> Hình vuông có diện tích 1 chính là $\Omega$. Cột nét
+  đứt là $B$, phần tô đậm là $A$. Trước khi lấy điều kiện, phần $A \cap B$ chỉ chiếm
+  $P(A \cap B)$ của cả hình. Sau khi bấm nút, cột $\lnot B$ biến mất và cột $B$ được kéo
+  giãn ra cho đủ diện tích 1 (việc kéo dãn ra chỉ là thể hiện rằng không gian mẫu đã thay đổi): phần tô đậm bây giờ chiếm đúng tỉ lệ
+  $P(A \cap B) / P(B) = P(A \mid B)$. Phép chia trong định nghĩa chính là phép kéo giãn ấy.
+</InteractiveFigure>
+
+<Callout type="warning" title="P(A|B) và P(B|A) là hai số khác nhau">
+Ví dụ, gần như mọi cầu thủ bóng rổ chuyên nghiệp
+đều cao trên một mét chín, nhưng gần như mọi người cao trên một mét chín đều **không**
+phải cầu thủ bóng rổ. Nói theo ký hiệu:
+$P(\text{cao} \mid \text{cầu thủ bóng rổ}) \approx 1$ trong khi $P(\text{cầu thủ bóng rổ} \mid \text{cao})$
+rất nhỏ — đơn giản vì người cao thì nhiều mà cầu thủ chuyên nghiệp thì hiếm. 
+</Callout>
+
+## Quy tắc nhân
+
+<Equation id="eq-nhan" number={1}>
+$$
+P(A \cap B) \;=\; P(B)\, P(A \mid B) \;=\; P(A)\, P(B \mid A) .
+$$
+</Equation>
+
+"xác suất để cả hai cùng xảy ra bằng xác suất của cái thứ nhất, nhân
+với xác suất của cái thứ hai khi biết cái thứ nhất đã xảy ra". Mở rộng hơn:
+
+<Equation id="eq-day-chuyen" number={2}>
+$$
+P(A_1 \cap A_2 \cap \cdots \cap A_n)
+= P(A_1)\, P(A_2 \mid A_1)\, P(A_3 \mid A_1 \cap A_2) \cdots
+P(A_n \mid A_1 \cap \cdots \cap A_{n-1}) .
+$$
+</Equation>
+
+Ví dụ, rút hai lá từ
+bộ 52 lá và hỏi xác suất được hai lá át:
+$$
+P(\text{hai át}) = \frac{4}{52} \times \frac{3}{51} = \frac{12}{2652} = \frac{1}{221} .
+$$
+Thừa số thứ hai là $3/51$ chứ không phải $4/52$, vì sau lần rút thứ nhất thì không gian
+mẫu đã đổi.
+
+## Biến cố độc lập
+
+Đôi khi biết $B$ nhưng không khẳng định được gì về $A$.
+
+<Definition lang="vi" term="Hai biến cố độc lập">
+$A$ và $B$ được coi là **độc lập** nếu
+$$
+P(A \cap B) = P(A)\,P(B) .
+$$
+Khi $P(B) > 0$, điều này tương đương với $P(A \mid B) = P(A)$: nếu điều kiện theo $B$
+không làm thay đổi niềm tin về $A$.
+</Definition>
+
+Định nghĩa bằng tích được ưu tiên vì nó đối xứng và vẫn có nghĩa khi $P(B) = 0$.
+
+<Callout type="misconception" title="“Độc lập” không phải là “xung khắc”">
+<span class="claim">Hai biến cố không thể cùng xảy ra thì độc lập với nhau.</span>
+Nếu $A$ và $B$ xung khắc và đều có xác suất dương thì biết $B$ xảy ra
+sẽ khiến $A$ **chắc chắn không** xảy ra: $P(A \mid B) = 0 \neq P(A)$. Hai biến cố xung
+khắc có xác suất dương thì luôn *phụ thuộc* lẫn nhau, và phụ thuộc rất mạnh. Xung khắc
+nói về $A \cap B = \varnothing$; độc lập nói về $P(A \cap B) = P(A)P(B)$.
+</Callout>
+
+
+## Công thức xác suất toàn phần
+
+Thường thì sẽ biết xác suất của $A$ *bên trong từng tình huống*, và muốn ghép lại thành
+xác suất chung.
+
+<Theorem kind="Định lý" number={1} name="xác suất toàn phần" id="dl-toan-phan">
+Cho $B_1, \ldots, B_n$ là một **hệ đầy đủ**: chúng đôi một xung khắc, hợp lại bằng
+$\Omega$, và $P(B_i) > 0$ với mọi $i$. Khi đó với mọi biến cố $A$,
+$$
+P(A) \;=\; \sum_{i=1}^{n} P(B_i)\, P(A \mid B_i) .
+$$
+</Theorem>
+
+<Proof lang="vi">
+Vì các $B_i$ phủ kín $\Omega$ và đôi một rời nhau, các tập $A \cap B_i$ cũng đôi một rời
+nhau và hợp lại đúng bằng $A$. Theo tính cộng tính,
+$P(A) = \sum_i P(A \cap B_i)$, rồi thay $P(A \cap B_i) = P(B_i) P(A \mid B_i)$ theo
+<EqRef lang="vi" id="eq-nhan" number={1} />.
+</Proof>
+
+Trường hợp hay dùng nhất là hệ hai phần tử $\{B, \lnot B\}$:
+$$
+P(A) = P(B)\,P(A \mid B) + P(\lnot B)\,P(A \mid \lnot B) .
+$$
+Đây là một **trung bình có trọng số** của hai xác suất có điều kiện, với trọng số là xác
+suất của từng tình huống. Theo dõi cây xác suất dưới đây để hiểu rõ hơn:
+
+<InteractiveFigure
+  id="fig-cay"
+  label="Hình 3"
+  title="Cây xác suất: nhân dọc theo đường, cộng giữa các đường"
+  hint="Kéo ba thanh trượt và quan sát các lá cây thay đổi."
+  viz="prob-tree"
+  lang="vi"
+  reserve={[690, 910]}
+>
+  Độ dày mỗi nhánh tỉ lệ với xác suất của nhánh đó, nên
+  một nhánh hiếm trông đúng là hiếm. Xác suất của một lá là tích các số dọc theo đường đi
+  tới lá đó; $P(A)$ là tổng của hai lá kết thúc ở $A$. Khi giảm $P(B)$ xuống rất nhỏ, lá
+  $B \cap A$ teo lại dù $P(A \mid B)$ vẫn lớn đó là lý do vì sao base rate lại quan trọng (theo dõi thêm ở phần sau).
+</InteractiveFigure>
+
+## Định lý Bayes
+
+Bây giờ ta có đủ mọi thứ để đảo ngược chiều của điều kiện.
+
+<Theorem kind="Định lý" number={2} name="Bayes" id="dl-bayes">
+Với $P(A) > 0$ và $P(B) > 0$,
+$$
+P(B \mid A) \;=\; \frac{P(A \mid B)\, P(B)}{P(A)} .
+$$
+Nếu thêm nữa $\{B, \lnot B\}$ là hệ đầy đủ thì mẫu số khai triển được:
+$$
+P(B \mid A) \;=\;
+\frac{P(A \mid B)\, P(B)}{P(A \mid B)\, P(B) + P(A \mid \lnot B)\, P(\lnot B)} .
+$$
+</Theorem>
+
+<Proof lang="vi">
+Theo <EqRef lang="vi" id="eq-nhan" number={1} />, $P(A \cap B)$ viết được theo hai cách:
+$P(A)P(B \mid A)$ và $P(B)P(A \mid B)$. Cho chúng bằng nhau rồi chia hai vế cho $P(A) > 0$
+được đẳng thức thứ nhất. Đẳng thức thứ hai là thay $P(A)$ bằng công thức xác suất toàn
+phần trong <a href="#dl-toan-phan">Định lý 1</a>.
+</Proof>
+
+
+<div class="table-scroll">
+
+| Thành phần | Tên gọi | Ý nghĩa |
+| --- | --- | --- |
+| $P(B)$ | xác suất tiên nghiệm | niềm tin về $B$ *trước khi* thấy dữ liệu |
+| $P(A \mid B)$ | độ hợp lý (likelihood) | khả năng quan sát được $A$ nếu $B$ đúng |
+| $P(A)$ | bằng chứng | khả năng quan sát được $A$, tính trên mọi tình huống |
+| $P(B \mid A)$ | xác suất hậu nghiệm | niềm tin về $B$ *sau khi* thấy $A$ |
+
+</div>
+
+Điểm mấu chốt: hậu nghiệm phụ thuộc vào cả độ hợp lý lẫn tiên nghiệm. Một xét
+nghiệm rất nhạy vẫn có thể để lại hậu nghiệm nhỏ, nếu tiên nghiệm đủ nhỏ.
+
+## Base rate:
+
+Quay lại bài toán mở đầu. Đặt $D$ = "có bệnh", $+$ = "xét nghiệm dương tính". Ta biết
+$$
+P(D) = 0{,}005, \qquad
+P(+ \mid D) = 0{,}99, \qquad
+P(- \mid \lnot D) = 0{,}95 .
+$$
+Hai con số cuối là **độ nhạy** và **độ đặc hiệu** của xét nghiệm. Áp dụng Bayes:
+$$
+P(D \mid +) =
+\frac{0{,}99 \times 0{,}005}
+{0{,}99 \times 0{,}005 \;+\; 0{,}05 \times 0{,}995}
+= \frac{0{,}00495}{0{,}00495 + 0{,}04975}
+= \frac{0{,}00495}{0{,}0547} \approx 0{,}0905 .
+$$
+
+Để giải quyết tốt nhất dạng bài toán này không phải là công thức mà là "đếm". Lấy 1000 người:
+
+- 5 người có bệnh; xét nghiệm bắt được khoảng 5 người trong số đó (99%);
+- 995 người không bệnh; 5% trong số họ vẫn dương tính, tức khoảng 50 người.
+
+Vậy có khoảng 55 người dương tính, trong đó chỉ 5 người thật sự có bệnh:
+$5/55 \approx 9\%$. Nhóm không bệnh đông đến mức chỉ cần một tỉ lệ sai nhỏ cũng tạo ra
+nhiều ca dương tính giả hơn hẳn số ca dương tính thật.
+
+<InteractiveFigure
+  id="fig-tile-nen"
+  label="Hình 4"
+  title="Một nghìn người, một xét nghiệm"
+  hint="Kéo tỉ lệ mắc bệnh và xem dải màu bên dưới đổi tỉ lệ."
+  viz="bayes-test"
+  lang="vi"
+  reserve={[990, 1460]}
+>
+  <strong>Chú ý.</strong> Mỗi ô vuông là một người. Dải nằm ngang phía dưới chỉ
+  gồm những người **dương tính**, chia thành ca thật (màu cam) và ca giả (màu xanh) — tỉ
+  lệ phần cam chính là $P(D \mid +)$. Giữ nguyên xét nghiệm và chỉ kéo tỉ lệ mắc bệnh từ
+  5/1000 lên 200/1000: hậu nghiệm nhảy từ khoảng 9% lên hơn 83%. Chất lượng xét nghiệm
+  không đổi; chỉ tỉ lệ nền đổi.
+</InteractiveFigure>
+
+<Callout type="insight" title="Vì sao “đếm" lại dễ hiểu hơn công thức">
+Gerd Gigerenzer gọi cách trình bày này là **tần suất tự nhiên**. Khi bài toán được nêu
+bằng số người thay vì bằng phần trăm, tỉ lệ người trả lời đúng tăng lên rõ rệt trong các
+thí nghiệm với cả sinh viên y khoa lẫn bác sĩ đang hành nghề. Về mặt toán học thì hai cách
+là một; về mặt tâm lý thì không. Khi gặp một bài Bayes, hãy ưu tiên quy về "trong 1000 người
+thì…" trước khi viết công thức ra.
+</Callout>
+
+<Callout type="misconception" title="Ngụy biện">
+<span class="claim">Xác suất để một người vô tội khớp bằng chứng chỉ là 1 phần triệu, nên
+khả năng bị cáo vô tội là 1 phần triệu.</span>
+Câu thứ nhất là $P(\text{khớp} \mid \text{vô tội})$; câu thứ hai là
+$P(\text{vô tội} \mid \text{khớp})$. Nếu cơ sở dữ liệu được đối chiếu có 10 triệu người vô
+tội, ta chờ đợi khoảng 10 người vô tội cũng khớp — và khi đó
+$P(\text{vô tội} \mid \text{khớp})$ có thể lớn hơn $90\%$. Đây đúng là bài toán base rate
+ở trên, chỉ đổi bối cảnh, và nó đã dẫn tới những vụ án oan có thật.
+</Callout>
+
+## Dạng odds: cập nhật nhiều lần cho gọn
+
+Có một cách viết định lý Bayes làm cho việc cập nhật nhiều lần trở nên rất nhẹ nhàng. Đặt
+**odds** của $B$ là $\operatorname{odds}(B) = P(B)/P(\lnot B)$. Viết Bayes cho $B$ và cho
+$\lnot B$ rồi chia hai đẳng thức cho nhau, mẫu số $P(A)$ triệt tiêu:
+
+<Equation id="eq-odds" number={3}>
+$$
+\underbrace{\frac{P(B \mid A)}{P(\lnot B \mid A)}}_{\text{odds hậu nghiệm}}
+\;=\;
+\underbrace{\frac{P(B)}{P(\lnot B)}}_{\text{odds tiên nghiệm}}
+\;\times\;
+\underbrace{\frac{P(A \mid B)}{P(A \mid \lnot B)}}_{\text{tỉ số hợp lý } \mathrm{LR}} .
+$$
+</Equation>
+
+Cập nhật niềm tin trở thành **một phép nhân**. Với xét nghiệm ở trên,
+$$
+\mathrm{LR}_{+} = \frac{P(+ \mid D)}{P(+ \mid \lnot D)} = \frac{0{,}99}{0{,}05} = 19{,}8 .
+$$
+Odds tiên nghiệm là $0{,}005/0{,}995 \approx 0{,}005025$; nhân với $19{,}8$ được odds hậu
+nghiệm $\approx 0{,}0995$, tương ứng xác suất $0{,}0995/1{,}0995 \approx 9{,}05\%$ — đúng
+bằng kết quả trước.
+
+Lấy logarit hai vế của <EqRef lang="vi" id="eq-odds" number={3} />, phép nhân thành phép cộng: mỗi
+mẩu bằng chứng độc lập đóng góp **cùng một lượng** vào log-odds. Đó là lý do trục đứng
+trong hình dưới đây được vẽ theo log-odds.
+
+<InteractiveFigure
+  id="fig-odds"
+  label="Hình 5"
+  title="Mỗi kết quả xét nghiệm là một bước nhảy bằng nhau"
+  hint="Bấm “Thêm một kết quả dương” vài lần, rồi thử thêm một kết quả âm."
+  viz="bayes-odds"
+  lang="vi"
+  reserve={[620, 930]}
+>
+  <strong>Điều đáng chú ý.</strong> Trên trục log-odds, hai kết quả dương tính giống nhau
+  tạo ra hai bước nhảy cao bằng nhau. Với tiên nghiệm 5/1000, một kết quả dương chỉ đưa
+  niềm tin lên khoảng 9%; kết quả dương thứ hai đưa nó lên khoảng 66%. Một kết quả âm kéo
+  ngược lại một đoạn dài hơn hẳn, vì $\mathrm{LR}_{-} = 0{,}01/0{,}95 \approx 0{,}0105$ là
+  một bằng chứng rất mạnh theo chiều ngược.
+</InteractiveFigure>
+
+<Callout type="warning" title="“Độc lập” ở đây là một giả thiết, không phải sự thật">
+Phép nhân hai tỉ số hợp lý chỉ đúng khi hai kết quả xét nghiệm **độc lập có điều kiện**
+với tình trạng bệnh: $P(+_1, +_2 \mid D) = P(+_1 \mid D)\,P(+_2 \mid D)$. Trong thực tế,
+lặp lại *cùng một* xét nghiệm trên *cùng một* người thường vi phạm giả thiết đó — nếu cơ
+thể người ấy có đặc điểm gây phản ứng chéo thì cả hai lần đều dễ dương tính giả. Khi đó
+kết quả thứ hai mang ít thông tin hơn phép nhân dự đoán. Hãy nêu rõ giả thiết mỗi khi dùng
+nó.
+</Callout>
+
+## Monty Hall: thông tin đến từ đâu mới là điều quan trọng
+
+Chọn một trong ba cánh cửa. Sau một cửa là chiếc xe, sau hai cửa còn lại là dê. Người
+dẫn chương trình vốn **biết** xe ở đâu mở một trong hai cửa bạn không chọn và cho thấy
+một con dê, rồi hỏi bạn có muốn đổi cửa không.
+
+Đổi cửa thắng với xác suất $2/3$. Lập luận bằng Bayes, giả sử bạn chọn cửa 1 và người dẫn
+mở cửa 3. Gọi $C_i$ là biến cố "xe ở cửa $i$", $M_3$ là "người dẫn mở cửa 3". Tiên nghiệm
+$P(C_i) = 1/3$. Độ hợp lý:
+$$
+P(M_3 \mid C_1) = \tfrac{1}{2}, \qquad
+P(M_3 \mid C_2) = 1, \qquad
+P(M_3 \mid C_3) = 0 ,
+$$
+vì khi xe ở cửa 1 người dẫn được chọn tuỳ ý giữa hai cửa dê, khi xe ở cửa 2 thì ông ta
+buộc phải mở cửa 3, và ông ta không bao giờ mở cửa có xe. Do đó
+$$
+P(C_2 \mid M_3) =
+\frac{1 \times \tfrac13}{\tfrac12 \times \tfrac13 + 1 \times \tfrac13 + 0}
+= \frac{\tfrac13}{\tfrac12} = \frac{2}{3} .
+$$
+
+Bây giờ đổi **một chi tiết duy nhất**: người dẫn không biết xe ở đâu và mở đại một trong
+hai cửa còn lại. Ta chỉ xét những ván mà ông ta tình cờ lộ ra con dê. Khi đó
+$P(M_3 \cap \text{dê} \mid C_1) = P(M_3 \cap \text{dê} \mid C_2) = 1/2$ và
+$P(M_3 \cap \text{dê} \mid C_3) = 0$, nên
+$$
+P(C_2 \mid M_3, \text{dê}) = \frac{\tfrac12 \times \tfrac13}{\tfrac12 \times \tfrac13 + \tfrac12 \times \tfrac13} = \frac{1}{2} .
+$$
+Điều kiện trông y hệt nhau vẫn một cửa đã mở với một con dê nhưng xác suất có điều kiện
+khác hẳn, vì quy trình sinh ra thông tin khác nhau.
+
+<InteractiveFigure
+  id="fig-monty"
+  label="Hình 6"
+  title="Cùng một cảnh tượng, hai xác suất khác nhau"
+  hint="Chơi thử vài ván, rồi bấm “Mô phỏng 1000 ván” và đổi kiểu người dẫn."
+  viz="monty-hall"
+  lang="vi"
+  reserve={[540, 770]}
+>
+  <strong>Điều đáng chú ý.</strong> Vạch đen trên mỗi thanh là giá trị lý thuyết. Với người
+  dẫn *biết* xe ở đâu, tần suất thắng khi đổi hội tụ về $2/3$. Với người dẫn *mở ngẫu
+  nhiên*, những ván lộ ra chiếc xe bị huỷ (ô “số ván bị huỷ” đếm chúng) và trong các ván
+  còn lại, giữ nguyên hay đổi đều thắng khoảng một nửa. Chính những ván bị huỷ ấy đã mang
+  đi phần thông tin.
+</InteractiveFigure>
+
+<Callout type="note" title="Một biến thể khác">
+Giả sử người dẫn biết xe ở đâu, và khi có quyền chọn giữa hai cửa dê thì ông ta **luôn mở
+cửa có số nhỏ hơn**. Bạn chọn cửa 1 và ông ta mở cửa 3. Khi đó $P(M_3 \mid C_1) = 0$ (vì
+nếu xe ở cửa 1 thì cả hai cửa 2 và 3 đều là dê, và ông ta sẽ mở cửa 2), còn
+$P(M_3 \mid C_2) = 1$. Bayes cho $P(C_2 \mid M_3) = 1$: đổi cửa **chắc chắn** thắng. Vẫn
+ba cánh cửa, vẫn một con dê được lộ ra, nhưng thói quen của người dẫn đã thay đổi lượng
+thông tin mà việc mở cửa mang lại.
+</Callout>
+
+<Callout type="warning" title="Nghịch lý Simpson: gộp nhóm có thể đảo ngược kết luận">
+Một nghiên cứu có thật về sỏi thận (Charig và cộng sự, 1986) so sánh hai phương pháp:
+
+<div class="table-scroll">
+
+| | Sỏi nhỏ | Sỏi lớn | Gộp chung |
+| --- | --- | --- | --- |
+| Phương pháp A | 81/87 = 93% | 192/263 = 73% | 273/350 = 78% |
+| Phương pháp B | 234/270 = 87% | 55/80 = 69% | 289/350 = 83% |
+
+</div>
+
+A tốt hơn ở **cả hai** nhóm, nhưng B lại tốt hơn khi gộp chung. Không có phép tính nào
+sai: bác sĩ có xu hướng dùng A cho các ca sỏi lớn khó chữa, nên kích thước sỏi vừa ảnh
+hưởng tới cách chọn phương pháp vừa ảnh hưởng tới kết quả. Bài học: $P(\text{khỏi} \mid
+\text{phương pháp})$ tính trên dữ liệu gộp **không** trả lời câu hỏi "nên chọn phương pháp
+nào", trừ khi ta đã xử lý các biến gây nhiễu.
+</Callout>
+
+## Những hiểu lầm thường gặp
+
+<Callout type="misconception" title="“Xét nghiệm đúng 99% nên tôi có bệnh với xác suất 99%”">
+<span class="claim">Độ chính xác của xét nghiệm chính là xác suất tôi có bệnh khi dương tính.</span>
+Độ nhạy là $P(+ \mid D)$, còn thứ bạn cần là $P(D \mid +)$. Muốn đảo chiều thì phải đi qua
+định lý Bayes, và Bayes bắt buộc phải dùng tới tỉ lệ nền $P(D)$. Không có tỉ lệ nền thì
+câu hỏi "tôi có bệnh với xác suất bao nhiêu" **không có** đáp án.
+</Callout>
+
+<Callout type="misconception" title="“Lấy điều kiện làm thay đổi thực tại”">
+<span class="claim">Khi biết tổng hai xúc xắc ≥ 9, hai con xúc xắc đã đổ khác đi.</span>
+Không. Hai con xúc xắc đã dừng từ lâu. Cái thay đổi là **thông tin của bạn**, và do đó là
+tập hợp các kết quả bạn còn phải cân nhắc. Xác suất có điều kiện mô tả trạng thái hiểu
+biết, không mô tả một cơ chế vật lý.
+</Callout>
+
+<Callout type="misconception" title="“Biết thêm thông tin thì xác suất luôn tăng”">
+<span class="claim">Có điều kiện thì $P(A \mid B) \ge P(A)$.</span>
+Lấy điều kiện có thể làm xác suất **tăng, giảm, hoặc giữ nguyên**. Với hai xúc xắc,
+$P(\text{có mặt } 6)$ tăng từ $11/36$ lên $7/10$ khi biết tổng ≥ 9, nhưng lại tụt xuống $0$
+khi biết tổng ≤ 6. Nó giữ nguyên đúng khi hai biến cố độc lập. Cả ba trường hợp đều bình
+thường.
+</Callout>
+
+<Callout type="misconception" title="“Xung khắc thì độc lập”">
+<span class="claim">Hai biến cố không bao giờ cùng xảy ra thì chẳng liên quan gì đến nhau.</span>
+Xung khắc là quan hệ mạnh nhất có thể theo chiều phụ thuộc: biết một cái xảy ra là biết
+chắc cái kia không xảy ra. Hai biến cố có xác suất dương mà xung khắc thì **không thể**
+độc lập.
+</Callout>
+
+<Callout type="misconception" title="“Ngửa năm lần rồi thì lần sau dễ ra sấp hơn”">
+<span class="claim">Đồng xu phải “bù lại” cho những lần ngửa vừa rồi.</span>
+Nếu các lần tung là độc lập thì $P(\text{sấp} \mid \text{năm lần ngửa}) = P(\text{sấp}) = 1/2$;
+đồng xu không có trí nhớ. Nhưng hãy để ý giả thiết: nếu bạn *không chắc* đồng xu cân đối,
+thì năm lần ngửa liên tiếp lại là bằng chứng theo Bayes rằng đồng xu thiên về ngửa — và
+khi đó $P(\text{sấp} \mid \text{năm lần ngửa}) < 1/2$. Ngụy biện nằm ở chỗ kết luận ngược
+chiều với bằng chứng.
+</Callout>
+
+## Ba bài tập
+
+Hãy thử tự làm trước khi mở lời giải.
+
+<Exercise
+  number={1}
+  level="dễ"
+  title="Hai con xúc xắc"
+  id="bt1"
+  label="Bài tập"
+  solutionLabel="Xem lời giải"
+>
+
+Gieo hai con xúc xắc cân đối, phân biệt được.
+
+1. Tính $P(\text{có ít nhất một mặt } 6)$.
+2. Tính $P(\text{có ít nhất một mặt } 6 \mid \text{tổng} \ge 9)$.
+3. Hai biến cố "có ít nhất một mặt 6" và "tổng ≥ 9" có độc lập không?
+
+<InteractiveFigure
+  id="fig-bt1"
+  label="Hình 7"
+  title="Không gian mẫu của bài tập 1, đã thu hẹp về tổng ≥ 9"
+  hint="Mười ô còn sáng là biến cố điều kiện; ô tô đậm là ô có mặt 6."
+  viz="dice-grid"
+  lang="vi"
+  options={{ a: 'at-least-one-6', b: 'sum-ge-9', restrict: true }}
+  breakout={false}
+  reserve={[700, 920]}
+>
+  <strong>Điều đáng chú ý.</strong> Đếm trực tiếp: 10 ô sáng, 7 ô tô đậm, nên
+  $P(A \mid B) = 7/10$. Bấm “Hiện đủ 36 kết quả” để so sánh với $P(A) = 11/36$.
+</InteractiveFigure>
+
+<Fragment slot="solution">
+
+**Câu 1.** Dễ hơn nếu tính phần bù. Không có mặt 6 nào nghĩa là cả hai con đều thuộc
+$\{1,\ldots,5\}$, tức $5 \times 5 = 25$ kết quả. Vậy
+$$
+P(\text{có ít nhất một } 6) = 1 - \frac{25}{36} = \frac{11}{36} \approx 0{,}306 .
+$$
+
+**Câu 2.** Liệt kê biến cố điều kiện $B = \{\text{tổng} \ge 9\}$:
+$$
+(3,6),\ (4,5),\ (4,6),\ (5,4),\ (5,5),\ (5,6),\ (6,3),\ (6,4),\ (6,5),\ (6,6),
+$$
+gồm $|B| = 10$ kết quả, nên $P(B) = 10/36$. Trong đó những kết quả có mặt 6 là
+$$
+(3,6),\ (4,6),\ (5,6),\ (6,3),\ (6,4),\ (6,5),\ (6,6),
+$$
+gồm 7 kết quả, nên $P(A \cap B) = 7/36$. Theo định nghĩa,
+$$
+P(A \mid B) = \frac{P(A \cap B)}{P(B)} = \frac{7/36}{10/36} = \frac{7}{10} = 0{,}7 .
+$$
+Để ý rằng hai thừa số $1/36$ triệt tiêu: khi mọi kết quả đồng khả năng, lấy điều kiện chỉ
+là **đếm lại trong tập nhỏ hơn**, $|A \cap B| / |B| = 7/10$.
+
+**Câu 3.** Không. Nếu độc lập thì $P(A \mid B)$ phải bằng $P(A)$, nhưng
+$0{,}7 \neq 11/36 \approx 0{,}306$. Kiểm tra bằng định nghĩa tích cũng ra như vậy:
+$P(A)P(B) = \frac{11}{36} \cdot \frac{10}{36} = \frac{110}{1296} \approx 0{,}085$, trong
+khi $P(A \cap B) = 7/36 \approx 0{,}194$. Hai biến cố phụ thuộc **thuận**: biết tổng lớn
+làm cho việc có một mặt 6 trở nên khả dĩ hơn nhiều.
+
+Trong Hình 1 ở trên, hãy chọn $A$ = "có ít nhất một mặt 6", $B$ = "tổng ≥ 9" rồi bấm
+"Chỉ giữ lại B": bạn sẽ thấy đúng 10 ô sáng, 7 trong số đó được tô đậm.
+
+</Fragment>
+
+</Exercise>
+
+<Exercise
+  number={2}
+  level="trung bình"
+  title="Xét nghiệm lần thứ hai"
+  id="bt2"
+  label="Bài tập"
+  solutionLabel="Xem lời giải"
+>
+
+Vẫn căn bệnh ở đầu bài: tỉ lệ mắc trong dân số là $0{,}5\%$, độ nhạy $99\%$, độ đặc hiệu
+$95\%$. Một người có kết quả dương tính.
+
+1. Tính $P(D \mid +)$.
+2. Người đó làm lại xét nghiệm và **lại dương tính**. Giả sử hai kết quả độc lập có điều
+   kiện với tình trạng bệnh, tính $P(D \mid +_1, +_2)$.
+3. Nếu lần thứ hai **âm tính** thì niềm tin còn lại bao nhiêu? So sánh với tỉ lệ nền ban
+   đầu và giải thích.
+
+<InteractiveFigure
+  id="fig-bt2"
+  label="Hình 8"
+  title="Dựng lại bài tập 2 bằng dạng odds"
+  hint="Đặt tiên nghiệm 5/1000, độ nhạy 99%, độ đặc hiệu 95%, rồi thêm các kết quả."
+  viz="bayes-odds"
+  lang="vi"
+  breakout={false}
+  reserve={[760, 960]}
+>
+  <strong>Điều đáng chú ý.</strong> Chuỗi “+ +” đưa niềm tin lên khoảng 66%; chuỗi “+ −”
+  kéo nó xuống dưới cả tiên nghiệm ban đầu. Hai bước nhảy dương cao bằng nhau, còn bước
+  nhảy âm dài hơn nhiều — đó là toàn bộ nội dung của câu 3.
+</InteractiveFigure>
+
+<Fragment slot="solution">
+
+Làm bằng dạng odds sẽ gọn nhất. Odds tiên nghiệm và hai tỉ số hợp lý:
+$$
+\operatorname{odds}(D) = \frac{0{,}005}{0{,}995} = 0{,}005025, \qquad
+\mathrm{LR}_{+} = \frac{0{,}99}{0{,}05} = 19{,}8, \qquad
+\mathrm{LR}_{-} = \frac{0{,}01}{0{,}95} = 0{,}010526 .
+$$
+
+**Câu 1.** Odds hậu nghiệm $= 0{,}005025 \times 19{,}8 = 0{,}099497$, đổi về xác suất:
+$$
+P(D \mid +) = \frac{0{,}099497}{1 + 0{,}099497} = 0{,}0905 = 9{,}05\% .
+$$
+Kiểm tra lại bằng công thức đầy đủ:
+$\dfrac{0{,}99 \times 0{,}005}{0{,}99 \times 0{,}005 + 0{,}05 \times 0{,}995}
+= \dfrac{0{,}00495}{0{,}0547} = 0{,}0905$ — khớp.
+
+**Câu 2.** Mỗi kết quả dương nhân odds với $19{,}8$, nên hai kết quả nhân với $19{,}8^2$:
+$$
+\operatorname{odds}(D \mid +_1, +_2) = 0{,}005025 \times 19{,}8^2 = 0{,}005025 \times 392{,}04 = 1{,}9700 ,
+$$
+$$
+P(D \mid +_1, +_2) = \frac{1{,}9700}{1 + 1{,}9700} = 0{,}6633 = 66{,}33\% .
+$$
+Một kết quả dương đưa niềm tin từ $0{,}5\%$ lên $9\%$; kết quả thứ hai đưa tiếp lên $66\%$.
+Đây chính là hai bước nhảy bằng nhau trên trục log-odds của Hình 5.
+
+**Câu 3.** Lần thứ hai âm tính thì nhân thêm $\mathrm{LR}_{-}$:
+$$
+\operatorname{odds}(D \mid +_1, -_2) = 0{,}005025 \times 19{,}8 \times 0{,}010526 = 0{,}0010473 ,
+$$
+$$
+P(D \mid +_1, -_2) = \frac{0{,}0010473}{1 + 0{,}0010473} = 0{,}001046 \approx 0{,}105\% .
+$$
+Niềm tin cuối cùng **thấp hơn** tỉ lệ nền $0{,}5\%$ ban đầu. Điều đó hợp lý: một kết quả
+âm tính từ xét nghiệm có độ nhạy $99\%$ là bằng chứng rất mạnh chống lại việc có bệnh
+($\mathrm{LR}_{-} \approx 1/95$), mạnh hơn nhiều so với sức thuyết phục của một kết quả
+dương ($\mathrm{LR}_{+} \approx 20$). Tổng hai bước nhảy trong log-odds là âm.
+
+**Một lưu ý quan trọng.** Toàn bộ câu 2 và câu 3 dựa trên giả thiết độc lập có điều kiện.
+Nếu lần hai là *cùng loại xét nghiệm trên cùng một người*, giả thiết ấy thường sai: nguyên
+nhân gây dương tính giả (phản ứng chéo, đặc điểm sinh học của người đó) vẫn còn nguyên ở
+lần hai. Trong lâm sàng, người ta khẳng định lại bằng một xét nghiệm **khác cơ chế**, chính
+là để giả thiết độc lập trở nên đáng tin hơn.
+
+</Fragment>
+
+</Exercise>
+
+<Exercise
+  number={3}
+  level="khó"
+  title="Monty Hall và nguồn gốc của thông tin"
+  id="bt3"
+  label="Bài tập"
+  solutionLabel="Xem lời giải"
+>
+
+Có ba cánh cửa, sau một cửa là xe, hai cửa còn lại là dê. Bạn chọn cửa 1.
+
+1. Người dẫn **biết** xe ở đâu, luôn mở một cửa có dê trong hai cửa còn lại, và chọn ngẫu
+   nhiên đều nếu có hai lựa chọn. Ông ta mở cửa 3. Tính $P(C_2 \mid M_3)$ và kết luận nên
+   giữ hay đổi.
+2. Người dẫn **không biết** xe ở đâu, mở ngẫu nhiên đều một trong hai cửa 2 và 3, và lần
+   này tình cờ lộ ra con dê ở cửa 3. Tính $P(C_2 \mid M_3, \text{dê})$.
+3. Tổng quát hoá câu 1 cho $n \ge 3$ cửa: bạn chọn một cửa, người dẫn (biết xe ở đâu) mở
+   $n - 2$ cửa dê, chỉ còn lại đúng một cửa khác. Chứng minh xác suất thắng khi đổi là
+   $(n-1)/n$.
+
+<InteractiveFigure
+  id="fig-bt3"
+  label="Hình 9"
+  title="Kiểm chứng bài tập 3 bằng mô phỏng"
+  hint="Chạy 1000 ván với từng kiểu người dẫn và so tần suất với vạch lý thuyết."
+  viz="monty-hall"
+  lang="vi"
+  breakout={false}
+  reserve={[610, 770]}
+>
+  <strong>Điều đáng chú ý.</strong> Với người dẫn biết xe ở đâu, thanh “đổi cửa” dừng quanh
+  vạch $2/3$. Chuyển sang người dẫn ngẫu nhiên, hai thanh gặp nhau ở $1/2$ và số ván bị
+  huỷ tăng dần — đúng bằng khoảng một phần ba số ván đã chơi.
+</InteractiveFigure>
+
+<Fragment slot="solution">
+
+Ký hiệu $C_i$ là biến cố "xe ở cửa $i$", với $P(C_1) = P(C_2) = P(C_3) = 1/3$, và $M_3$ là
+"người dẫn mở cửa 3".
+
+**Câu 1.** Độ hợp lý của việc mở cửa 3 trong từng tình huống:
+$$
+P(M_3 \mid C_1) = \tfrac12, \qquad P(M_3 \mid C_2) = 1, \qquad P(M_3 \mid C_3) = 0 .
+$$
+Dòng thứ nhất vì khi xe ở cửa bạn chọn, hai cửa còn lại đều là dê nên ông ta chọn đều giữa
+chúng. Dòng thứ hai vì khi xe ở cửa 2, cửa 3 là cửa dê duy nhất ông ta được phép mở. Dòng
+thứ ba vì ông ta không bao giờ mở cửa có xe. Theo công thức xác suất toàn phần,
+$$
+P(M_3) = \tfrac13 \cdot \tfrac12 + \tfrac13 \cdot 1 + \tfrac13 \cdot 0 = \tfrac12 ,
+$$
+và theo Bayes,
+$$
+P(C_2 \mid M_3) = \frac{\tfrac13 \cdot 1}{\tfrac12} = \frac{2}{3},
+\qquad
+P(C_1 \mid M_3) = \frac{\tfrac13 \cdot \tfrac12}{\tfrac12} = \frac{1}{3} .
+$$
+**Nên đổi**: cửa còn lại có xác suất $2/3$, gấp đôi cửa bạn chọn ban đầu. Trực giác gọn
+nhất: xác suất bạn chọn đúng ngay từ đầu là $1/3$ và việc mở cửa không thể làm nó thay
+đổi, vì người dẫn *luôn* mở được một cửa dê dù bạn chọn thế nào — hành động đó không mang
+thông tin gì về cửa 1.
+
+**Câu 2.** Bây giờ biến cố quan sát được là "mở cửa 3 **và** thấy dê":
+$$
+\begin{aligned}
+P(M_3, \text{dê} \mid C_1) &= \tfrac12, \\
+P(M_3, \text{dê} \mid C_2) &= \tfrac12, \\
+P(M_3, \text{dê} \mid C_3) &= 0 .
+\end{aligned}
+$$
+Với $C_1$ và $C_2$, cửa 3 là cửa dê nên chỉ cần ông ta chọn cửa 3, xác suất $1/2$. Với
+$C_3$, mở cửa 3 sẽ lộ ra xe nên biến cố ta đang xét không xảy ra. Do đó
+$$
+P(M_3, \text{dê}) = \tfrac13 \cdot \tfrac12 + \tfrac13 \cdot \tfrac12 + 0 = \tfrac13 ,
+$$
+$$
+P(C_2 \mid M_3, \text{dê}) = \frac{\tfrac13 \cdot \tfrac12}{\tfrac13} = \frac{1}{2} .
+$$
+Giữ hay đổi đều như nhau. So sánh hai câu: **hình ảnh trên sân khấu giống hệt nhau**, dữ
+liệu quan sát được cũng như nhau, nhưng độ hợp lý $P(\text{quan sát} \mid C_i)$ khác nhau
+vì quy trình sinh ra quan sát khác nhau. Xác suất có điều kiện phụ thuộc vào cả mô hình
+lẫn dữ liệu.
+
+Trong Hình 6, hãy chạy 1000 ván ở mỗi kiểu người dẫn. Ở kiểu ngẫu nhiên, khoảng một phần
+ba số ván bị huỷ vì lộ ra xe — chính phần bị huỷ ấy là chỗ chứa thông tin đã mất.
+
+**Câu 3.** Không mất tính tổng quát, giả sử bạn chọn cửa 1, và $P(C_1) = 1/n$.
+
+Xét hai trường hợp.
+
+- Nếu xe ở cửa 1 (xác suất $1/n$), thì mọi cửa khác đều là dê, người dẫn mở $n-2$ cửa dê
+  bất kỳ, và cửa còn lại cũng là dê. Đổi cửa **thua**.
+- Nếu xe **không** ở cửa 1 (xác suất $(n-1)/n$), thì người dẫn buộc phải chừa lại đúng cửa
+  có xe: ông ta chỉ được mở các cửa dê, mà trong $n-1$ cửa còn lại có đúng một cửa xe và
+  $n-2$ cửa dê, nên $n-2$ cửa ông ta mở chính là toàn bộ số cửa dê ấy. Cửa duy nhất còn
+  lại là cửa có xe. Đổi cửa **thắng chắc chắn**.
+
+Hai trường hợp này xung khắc và phủ kín mọi khả năng, nên theo công thức xác suất toàn
+phần
+$$
+P(\text{thắng khi đổi})
+= \frac{1}{n} \cdot 0 + \frac{n-1}{n} \cdot 1
+= \frac{n-1}{n} .
+$$
+Với $n = 3$ ta được $2/3$, khớp với câu 1. Với $n = 100$, đổi cửa thắng $99\%$ số lần —
+và đó cũng là cách nhanh nhất để thuyết phục một người còn hoài nghi: hãy hình dung 100
+cánh cửa, bạn chọn một cửa, người dẫn mở 98 cửa dê, rồi hỏi bạn có đổi không.
+
+</Fragment>
+
+</Exercise>
+
+## Tóm tắt
+
+<div class="table-scroll">
+
+| | |
+| --- | --- |
+| Định nghĩa | $P(A \mid B) = \dfrac{P(A \cap B)}{P(B)}$, cần $P(B) > 0$ |
+| Ý nghĩa hình học | thu hẹp không gian mẫu về $B$ rồi chuẩn hoá lại cho tổng bằng 1 |
+| Quy tắc nhân | $P(A \cap B) = P(B)P(A \mid B) = P(A)P(B \mid A)$ |
+| Độc lập | $P(A \cap B) = P(A)P(B)$, tương đương $P(A \mid B) = P(A)$ khi $P(B) > 0$ |
+| Xung khắc | $A \cap B = \varnothing$ — **không** phải độc lập, mà là phụ thuộc mạnh |
+| Xác suất toàn phần | $P(A) = \sum_i P(B_i) P(A \mid B_i)$ với $\{B_i\}$ là hệ đầy đủ |
+| Bayes | $P(B \mid A) = \dfrac{P(A \mid B) P(B)}{P(A)}$ |
+| Dạng odds | odds hậu nghiệm = odds tiên nghiệm $\times$ tỉ số hợp lý |
+| Sai lầm hay gặp | lẫn $P(A \mid B)$ với $P(B \mid A)$; bỏ quên tỉ lệ nền; coi xung khắc là độc lập |
+
+</div>
+
+Nếu chỉ nhớ một câu: **xác suất có điều kiện là xác suất được tính lại trên một không gian
+mẫu nhỏ hơn, và mọi nghịch lý trong bài này đều đến từ việc nhầm lẫn xem không gian mẫu ấy
+thực sự là gì.**
+
+## Đọc thêm
+
+- J. K. Blitzstein và J. Hwang, *Introduction to Probability*, tái bản lần 2, CRC Press,
+  2019. Chương 2 dành trọn cho xác suất có điều kiện; bản điện tử và khoá Stat 110 của
+  Harvard được cung cấp miễn phí.
+- S. Ross, *A First Course in Probability*, tái bản lần 10, Pearson, 2018. Nhiều bài tập
+  theo phong cách giáo trình.
+- W. Feller, *An Introduction to Probability Theory and Its Applications*, tập 1, tái bản
+  lần 3, Wiley, 1968. Kinh điển, và phần bàn về trực giác xác suất vẫn còn nguyên giá trị.
+- G. Gigerenzer và U. Hoffrage, “How to improve Bayesian reasoning without instruction:
+  frequency formats”, *Psychological Review* 102(4), 1995, 684–704. Nguồn gốc của cách
+  trình bày bằng tần suất tự nhiên.
+- A. Tversky và D. Kahneman, “Judgment under Uncertainty: Heuristics and Biases”,
+  *Science* 185, 1974, 1124–1131. Bài báo khai sinh khái niệm ngụy biện tỉ lệ nền.
+- S. Selvin, “A problem in probability”, *The American Statistician* 29(1), 1975, 67.
+  Lá thư đầu tiên nêu bài toán Monty Hall.
+- C. R. Charig, D. R. Webb, S. R. Payne và J. E. Wickham, “Comparison of treatment of
+  renal calculi by open surgery, percutaneous nephrolithotomy, and extracorporeal
+  shockwave lithotripsy”, *British Medical Journal* 292, 1986, 879–882. Nguồn của bảng số
+  liệu trong phần nghịch lý Simpson.
+- E. T. Jaynes, *Probability Theory: The Logic of Science*, Cambridge University Press,
+  2003. Cách nhìn xác suất như logic mở rộng.
+- J. Pearl và D. Mackenzie, *The Book of Why*, Basic Books, 2018. Vì sao xác suất có điều
+  kiện chưa đủ để nói về nhân quả.

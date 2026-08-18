@@ -1,12 +1,18 @@
 ---
+import { DEFAULT_LANG, type Lang } from '../../lib/i18n';
+
 interface Props {
   label?: string;
+  /** Language of the surrounding article, so the label matches the prose. */
+  lang?: Lang;
 }
-const { label = 'Proof' } = Astro.props;
+const { label, lang = DEFAULT_LANG } = Astro.props;
+const LABEL: Record<Lang, string> = { en: 'Proof', vi: 'Chứng minh' };
+const heading = label ?? LABEL[lang];
 ---
 
 <section class="block block--proof">
-  <p class="block__head"><span class="block__kind">{label}</span></p>
+  <p class="block__head"><span class="block__kind">{heading}</span></p>
   <div class="block__body">
     <slot />
     <span class="qed" aria-label="end of proof">□</span>

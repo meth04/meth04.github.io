@@ -1,0 +1,89 @@
+---
+/**
+ * Language filter for the archive.
+ *
+ * These are ordinary links to statically generated pages rather than a
+ * client-side toggle, so filtering works without JavaScript, survives a reload
+ * and can be linked to or bookmarked.
+ */
+import { LANGUAGES, LANGUAGE_NAME, type Lang } from '../../lib/i18n';
+
+interface Props {
+  /** Currently selected filter. */
+  active: Lang | 'all';
+  /** Number of articles per language, used to label and hide empty options. */
+  counts: Map<Lang, number>;
+  /** Label for the "all languages" option. */
+  allLabel?: string;
+  /** Accessible name for the group. */
+  legend?: string;
+}
+
+const { active, counts, allLabel = 'All languages', legend = 'Filter by language' } = Astro.props;
+const total = [...counts.values()].reduce((sum, n) => sum + n, 0);
+const available = LANGUAGES.filter((lang) => (counts.get(lang) ?? 0) > 0);
+---
+
+{
+  available.length > 1 && (
+    <nav class="lang-filter" aria-label={legend}>
+      <a
+        class="lang-filter__chip"
+        href="/blog/"
+        aria-current={active === 'all' ? 'page' : undefined}
+      >
+        {allLabel} <span class="lang-filter__count">{total}</span>
+      </a>
+      {available.map((lang) => (
+        <a
+          class="lang-filter__chip"
+          href={`/blog/lang/${lang}/`}
+          lang={lang}
+          hreflang={lang}
+          aria-current={active === lang ? 'page' : undefined}
+        >
+          {LANGUAGE_NAME[lang]} <span class="lang-filter__count">{counts.get(lang)}</span>
+        </a>
+      ))}
+    </nav>
+  )
+}
+
+<style>
+  .lang-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    font-family: var(--f-sans);
+  }
+  .lang-filter__chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4em;
+    font-size: var(--fs-sm);
+    color: var(--c-ink-muted);
+    text-decoration: none;
+    border: var(--border);
+    border-radius: 999px;
+    padding: 0.35em 0.9em;
+    background: var(--c-bg-raised);
+    min-height: 2.25rem;
+    transition:
+      color 120ms var(--ease),
+      border-color 120ms var(--ease);
+  }
+  .lang-filter__chip:hover {
+    color: var(--c-ink);
+    border-color: var(--c-rule-strong);
+  }
+  .lang-filter__chip[aria-current='page'] {
+    color: var(--c-bg-raised);
+    background: var(--c-ink);
+    border-color: var(--c-ink);
+  }
+  .lang-filter__count {
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    opacity: 0.75;
+  }
+</style>

@@ -1,9 +1,14 @@
 ---
+import { DEFAULT_LANG, type Lang } from '../../lib/i18n';
+
 interface Props {
   id: string;
   number: number;
+  /** Language of the surrounding article, so the word matches the prose. */
+  lang?: Lang;
 }
-const { id, number } = Astro.props;
+const { id, number, lang = DEFAULT_LANG } = Astro.props;
+const WORD: Record<Lang, string> = { en: 'equation', vi: 'công thức' };
 ---
 
-<a class="eq-ref" href={`#${id}`}>equation&nbsp;({number})</a>
+<a class="eq-ref" href={`#${id}`}>{WORD[lang]}&nbsp;({number})</a>

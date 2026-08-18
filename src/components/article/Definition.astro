@@ -1,15 +1,20 @@
 ---
+import { DEFAULT_LANG, type Lang } from '../../lib/i18n';
+
 interface Props {
   /** Short name of the object being defined, e.g. "Gradient". */
   term: string;
   id?: string;
+  /** Language of the surrounding article, so the label matches the prose. */
+  lang?: Lang;
 }
-const { term, id } = Astro.props;
+const { term, id, lang = DEFAULT_LANG } = Astro.props;
+const LABEL: Record<Lang, string> = { en: 'Definition', vi: 'Định nghĩa' };
 ---
 
 <section class="block block--definition" id={id}>
   <p class="block__head">
-    <span class="block__kind">Definition</span><span class="block__name">{term}</span>
+    <span class="block__kind">{LABEL[lang]}</span><span class="block__name">{term}</span>
   </p>
   <div class="block__body"><slot /></div>
 </section>

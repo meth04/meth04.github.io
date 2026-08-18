@@ -35,6 +35,33 @@ npm run preview   # serve the production build
 npm run format    # prettier
 ```
 
+## Languages
+
+Articles declare their own language. The archive can be filtered, and each
+language has its own statically generated page:
+
+- `/blog/` — every article, with EN / VI filter chips
+- `/blog/lang/en/`, `/blog/lang/vi/` — one language each
+
+Filtering is done with links to real pages rather than a client-side toggle, so
+it works without JavaScript and can be bookmarked. The search page additionally
+offers a language filter, and search is diacritic-insensitive: "xac suat" finds
+"xác suất".
+
+An article's `lang` drives `<html lang>`, the date format, the reading-time
+label, the article-level interface text (`src/lib/i18n.ts`) and the Vietnamese
+serif stack. Interactive figures receive the language too and label their own
+controls accordingly.
+
+Two articles that are translations of each other share a `translationKey`; each
+then links to the other, `hreflang` alternates are emitted, and listings that
+show one entry per piece of writing (the homepage, topic pages) collapse them to
+a single card.
+
+The global navigation stays in English because it is shared by both archives;
+topics are English labels for the same reason, so a topic page aggregates
+articles in either language.
+
 ## Writing an article
 
 Create `src/content/blog/<slug>.mdx`. The frontmatter schema lives in
@@ -46,6 +73,8 @@ title: 'Article title'
 description: 'One or two sentences, used for search results and social cards.'
 pubDate: 2026-08-18
 updatedDate: 2026-09-01 # optional
+lang: vi # 'en' (default) or 'vi'
+translationKey: some-shared-key # optional, links the versions of one article
 tags: ['gradient descent']
 topics: ['optimization']
 draft: false
@@ -59,6 +88,7 @@ Article components available inside MDX:
 
 - `Callout` — `note`, `insight`, `warning`, `misconception`
 - `Definition`, `Theorem` (`kind`, `number`, `name`), `Proof`
+- `Exercise` — a numbered problem whose solution sits in a collapsed `<details>`
 - `Equation` (`number`, `id`) and `EqRef` for numbered, cross-referenced display maths
 - `Figure` for static graphics, `InteractiveFigure` for interactive ones
 

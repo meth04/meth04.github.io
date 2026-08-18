@@ -36,6 +36,14 @@
     'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, 'Times New Roman',
     serif;
   --f-mono: ui-monospace, SFMono-Regular, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  /*
+    Vietnamese serif stack. The default stack leads with faces that have no
+    Vietnamese coverage (Iowan Old Style in particular), which makes browsers
+    fall back per glyph and gives visibly mismatched diacritics. These faces all
+    cover the Vietnamese alphabet.
+  */
+  --f-serif-vi:
+    'Palatino Linotype', 'Times New Roman', 'Noto Serif', 'Liberation Serif', Georgia, serif;
 
   --fs-xs: 0.78rem;
   --fs-sm: 0.875rem;
@@ -73,4 +81,14 @@
   --border: 1px solid var(--c-rule);
   --ring: 2px solid var(--c-focus);
   --ease: cubic-bezier(0.32, 0.72, 0.3, 1);
+}
+
+/*
+  Anything marked as Vietnamese — the whole page on a Vietnamese article, or a
+  single card title in a mixed list — picks up the Vietnamese serif and a little
+  extra leading for the stacked diacritics.
+*/
+:lang(vi) {
+  --f-serif: var(--f-serif-vi);
+  --lh-prose: 1.78;
 }

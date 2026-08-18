@@ -350,10 +350,22 @@
     gap: var(--s-3);
   }
   .viz-readout {
-    gap: var(--s-3) var(--s-5);
+    /* A grid on narrow screens: with flex, a label that wraps to two lines
+       pushes its value down and the row stops lining up with its neighbour. */
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-4) var(--s-5);
   }
+  /* Cells in a row stretch to the same height and the value sits at the bottom
+     of its cell, so values line up however many lines their labels take. */
   .viz-readout > div {
-    flex: 1 0 40%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .viz-readout > div dd {
+    margin-block-start: auto;
+    padding-block-start: 0.15rem;
   }
 }
 
@@ -391,4 +403,265 @@
   color: var(--c-ink-muted);
   margin: var(--s-2) 0 0;
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Dice grid (finite sample space) ---------- */
+.dice-grid__wrap {
+  overflow-x: auto;
+}
+.dice-grid__axis {
+  font-family: var(--f-sans);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  margin: 0 0 var(--s-2);
+  text-align: center;
+}
+.dice-grid {
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-family: var(--f-sans);
+  font-variant-numeric: tabular-nums;
+  /* Shrink to the cells: a min-width would stretch the only auto-width column
+     (the row headers) instead of the grid itself. */
+  width: max-content;
+  margin-inline: auto;
+}
+.dice-grid th[scope='row'] {
+  width: 1.6rem;
+}
+.dice-grid__caption {
+  caption-side: bottom;
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  padding-block-start: var(--s-3);
+}
+.dice-grid th {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-ink-muted);
+  padding: 0.1rem 0.3rem;
+  text-align: center;
+}
+.dice-grid__corner {
+  font-weight: 500 !important;
+  font-size: 0.62rem !important;
+  white-space: nowrap;
+}
+.dice-grid td {
+  width: 2.1rem;
+  height: 2.1rem;
+  text-align: center;
+  vertical-align: middle;
+  font-size: var(--fs-sm);
+  color: var(--c-ink-faint);
+  background: var(--c-bg-sunk);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition:
+    background 120ms var(--ease),
+    color 120ms var(--ease);
+}
+.dice-grid td.is-b {
+  border-color: var(--c-plot-alt);
+  color: var(--c-ink-soft);
+}
+.dice-grid td.is-a {
+  background: var(--c-accent-wash);
+  color: var(--c-ink-soft);
+}
+.dice-grid td.is-ab {
+  background: var(--c-accent);
+  border-color: var(--c-accent-deep);
+  color: #fff;
+  font-weight: 700;
+}
+.dice-grid td.is-muted {
+  opacity: 0.25;
+}
+
+/* ---------- Icon array (natural frequencies) ---------- */
+.icon-array {
+  display: grid;
+  grid-template-columns: repeat(40, minmax(0, 1fr));
+  gap: 1px;
+  margin-block-end: var(--s-5);
+}
+.icon-array__cell {
+  aspect-ratio: 1;
+  border-radius: 1px;
+  background: var(--c-rule);
+}
+.icon-array__cell.is-tp {
+  background: var(--c-plot-point);
+}
+.icon-array__cell.is-fn {
+  background: var(--c-plot-alt2);
+}
+.icon-array__cell.is-fp {
+  background: var(--c-plot-alt);
+}
+.icon-array__cell.is-tn {
+  /* Slightly stronger than the empty state, so a thousand people still read as
+     a population rather than as blank space. */
+  background: var(--c-rule-strong);
+  opacity: 0.5;
+}
+.icon-array__title {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-ink-soft);
+  margin: 0 0 var(--s-2);
+}
+.split-bar {
+  display: flex;
+  height: 1.5rem;
+  border-radius: 3px;
+  overflow: hidden;
+  border: var(--border);
+}
+.split-bar__part {
+  display: block;
+  transition: flex-grow 200ms var(--ease);
+}
+.split-bar__part--true {
+  background: var(--c-plot-point);
+}
+.split-bar__part--false {
+  background: var(--c-plot-alt);
+}
+.split-bar__caption {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-soft);
+  margin: var(--s-2) 0 0;
+}
+
+@media (max-width: 640px) {
+  /* Fewer rows so the array does not push the split bar — which carries the
+     actual answer — a whole screen further down. */
+  .icon-array {
+    grid-template-columns: repeat(32, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Monty Hall ---------- */
+.doors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-3);
+}
+.door {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 7rem;
+  padding: var(--s-3);
+  font-family: var(--f-sans);
+  background: var(--c-bg-sunk);
+  border: 2px solid var(--c-rule-strong);
+  border-radius: var(--radius);
+  color: var(--c-ink-soft);
+  cursor: pointer;
+  transition:
+    background 160ms var(--ease),
+    border-color 160ms var(--ease),
+    transform 160ms var(--ease);
+}
+.door:disabled {
+  cursor: default;
+}
+.door:not(:disabled):hover {
+  border-color: var(--c-accent);
+  transform: translateY(-2px);
+}
+.door__number {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--c-ink-muted);
+}
+.door__content {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+.door__tag {
+  font-size: var(--fs-xs);
+  color: var(--c-accent-deep);
+  min-height: 1em;
+}
+.door.is-picked {
+  border-color: var(--c-accent);
+}
+.door.is-host {
+  opacity: 0.6;
+  border-style: dashed;
+}
+.door.is-open {
+  background: var(--c-bg-raised);
+}
+.door.is-car {
+  background: var(--c-accent-wash);
+  border-color: var(--c-accent);
+}
+.door.is-final {
+  box-shadow: inset 0 0 0 2px var(--c-accent);
+}
+
+/* ---------- Rate bars ---------- */
+.rate-bars {
+  display: grid;
+  gap: var(--s-3);
+  margin-block-start: var(--s-4);
+}
+.rate-bar {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) 1fr minmax(3.5rem, auto);
+  align-items: center;
+  gap: var(--s-3);
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+}
+.rate-bar__label {
+  color: var(--c-ink-muted);
+}
+.rate-bar__track {
+  position: relative;
+  display: block;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: var(--c-bg-sunk);
+  border: var(--border);
+  overflow: hidden;
+}
+.rate-bar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--c-plot-point);
+  transition: width 200ms var(--ease);
+}
+.rate-bar__marker {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--c-ink);
+}
+.rate-bar__value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+}
+
+@media (max-width: 520px) {
+  .rate-bar {
+    grid-template-columns: 1fr minmax(3.5rem, auto);
+  }
+  .rate-bar__track {
+    grid-column: 1 / -1;
+    order: 3;
+  }
 }

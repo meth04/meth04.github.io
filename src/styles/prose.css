@@ -64,6 +64,9 @@
 }
 
 /* Heading anchors: visible on hover/focus, never announced as content. */
+.prose .heading-anchor::before {
+  content: '#';
+}
 .prose .heading-anchor {
   float: left;
   margin-left: -1.1em;
@@ -199,7 +202,10 @@
   border-radius: var(--radius);
   background: var(--c-bg-raised);
 }
-.prose table {
+/* Scoped to `.table-scroll` so that tables built by a visualization — the dice
+   grid, for instance — keep their own layout instead of inheriting a content
+   table's minimum width. */
+.prose .table-scroll table {
   border-collapse: collapse;
   width: 100%;
   /* Keep columns readable on phones: the wrapper scrolls rather than letting
@@ -209,24 +215,24 @@
   font-size: var(--fs-sm);
   line-height: 1.5;
 }
-.prose th,
-.prose td {
+.prose .table-scroll th,
+.prose .table-scroll td {
   text-align: left;
   padding: var(--s-3) var(--s-4);
   border-bottom: 1px solid var(--c-rule);
   vertical-align: top;
 }
-.prose thead th {
+.prose .table-scroll thead th {
   font-weight: 600;
   color: var(--c-ink-soft);
   background: var(--c-bg-sunk);
 }
 /* First column carries the row label; give it room before the others. */
-.prose tbody th:first-child,
-.prose tbody td:first-child {
+.prose .table-scroll tbody th:first-child,
+.prose .table-scroll tbody td:first-child {
   min-width: 9rem;
 }
-.prose tbody tr:last-child td {
+.prose .table-scroll tbody tr:last-child td {
   border-bottom: 0;
 }
 

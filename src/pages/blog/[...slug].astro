@@ -1,7 +1,13 @@
 ---
 import { render } from 'astro:content';
 import ArticleLayout from '../../layouts/ArticleLayout.astro';
-import { getArticles, relatedArticles, neighbours, type Article } from '../../lib/content';
+import {
+  getArticles,
+  relatedArticles,
+  neighbours,
+  translationOf,
+  type Article,
+} from '../../lib/content';
 
 export async function getStaticPaths() {
   const articles = await getArticles();
@@ -15,8 +21,16 @@ const { article, articles } = Astro.props;
 const { Content, headings } = await render(article);
 const related = relatedArticles(article, articles);
 const { newer, older } = neighbours(article, articles);
+const translation = translationOf(article, articles);
 ---
 
-<ArticleLayout article={article} headings={headings} related={related} newer={newer} older={older}>
+<ArticleLayout
+  article={article}
+  headings={headings}
+  related={related}
+  newer={newer}
+  older={older}
+  translation={translation}
+>
   <Content />
 </ArticleLayout>

@@ -7,6 +7,8 @@
  * `viz` names the module the client-side loader lazily imports once the figure
  * approaches the viewport.
  */
+import { DEFAULT_LANG, t, type Lang } from '../../lib/i18n';
+
 interface Props {
   id: string;
   label: string;
@@ -23,8 +25,20 @@ interface Props {
    * point is only to keep the text below from jumping.
    */
   reserve?: [wide: number, narrow: number];
+  /** Language of the surrounding article, for the no-JavaScript message. */
+  lang?: Lang;
 }
-const { id, label, title, hint, viz, options, breakout = true, reserve = [680, 800] } = Astro.props;
+const {
+  id,
+  label,
+  title,
+  hint,
+  viz,
+  options,
+  breakout = true,
+  reserve = [680, 800],
+  lang = DEFAULT_LANG,
+} = Astro.props;
 const describedBy = `${id}-caption`;
 const reserveStyle = `--viz-reserve:${reserve[0]}px;--viz-reserve-narrow:${reserve[1]}px`;
 ---
@@ -40,6 +54,7 @@ const reserveStyle = `--viz-reserve:${reserve[0]}px;--viz-reserve-narrow:${reser
       class="viz-plot"
       data-viz={viz}
       data-describedby={describedBy}
+      data-lang={lang}
       data-options={options ? JSON.stringify(options) : undefined}
       style={reserveStyle}
     >
@@ -47,10 +62,7 @@ const reserveStyle = `--viz-reserve:${reserve[0]}px;--viz-reserve-narrow:${reser
   </div>
   <figcaption class="figure__caption" id={describedBy}><slot /></figcaption>
   <noscript>
-    <p class="figure__fallback">
-      This figure is interactive and needs JavaScript. The caption above states the result it
-      demonstrates, and the surrounding text derives it in full, so nothing mathematical is lost.
-    </p>
+    <p class="figure__fallback">{t(lang).noscriptFigure}</p>
   </noscript>
 </figure>
 

@@ -2,7 +2,7 @@
 import BaseHead from '../components/layout/BaseHead.astro';
 import SiteHeader from '../components/layout/SiteHeader.astro';
 import SiteFooter from '../components/layout/SiteFooter.astro';
-import { LOCALE } from '../consts';
+import { DEFAULT_LANG, LANGUAGE_TAG, type Lang } from '../lib/i18n';
 import '../styles/base.css';
 
 interface Props {
@@ -15,17 +15,21 @@ interface Props {
   imageAlt?: string;
   noindex?: boolean;
   jsonLd?: Record<string, unknown>;
+  /** Language of the page's main content. */
+  lang?: Lang;
+  /** hreflang alternates, used by translated articles. */
+  alternates?: Array<{ lang: Lang; href: string }>;
   /** Extra class on <main>, used by the article layout. */
   mainClass?: string;
 }
 
-const { mainClass, ...head } = Astro.props;
+const { mainClass, lang = DEFAULT_LANG, ...head } = Astro.props;
 ---
 
 <!doctype html>
-<html lang={LOCALE}>
+<html lang={LANGUAGE_TAG[lang]}>
   <head>
-    <BaseHead {...head} />
+    <BaseHead {...head} lang={lang} />
     <slot name="head" />
   </head>
   <body>

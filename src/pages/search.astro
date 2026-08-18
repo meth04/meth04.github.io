@@ -1,12 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getArticles, articleUrl } from '../lib/content';
-import { formatDate } from '../lib/text';
+import { getArticles, articleUrl, languageCounts } from '../lib/content';
+import { formatDateIn, LANGUAGES, LANGUAGE_NAME, LANGUAGE_BADGE } from '../lib/i18n';
 
 // The full list is rendered server-side so that the page is useful with
 // JavaScript switched off, and so that there is something to read before the
 // index has been fetched.
 const articles = await getArticles();
+const counts = languageCounts(articles);
+const available = LANGUAGES.filter((lang) => (counts.get(lang) ?? 0) > 0);
 ---
 
 <BaseLayout
@@ -31,6 +33,22 @@ const articles = await getArticles();
       <button type="submit" class="viz-btn" data-variant="primary">Search</button>
     </form>
 
+    {
+      available.length > 1 && (
+        <div class="search__langs" role="group" aria-label="Filter by language" id="lang-filter">
+          <button type="button" class="lang-chip" data-lang="all" aria-pressed="true">
+            All languages <span class="lang-chip__count">{articles.length}</span>
+          </button>
+          {available.map((lang) => (
+            <button type="button" class="lang-chip" data-lang={lang} aria-pressed="false">
+              <span lang={lang}>{LANGUAGE_NAME[lang]}</span>
+              <span class="lang-chip__count">{counts.get(lang)}</span>
+            </button>
+          ))}
+        </div>
+      )
+    }
+
     <p class="search__status" id="search-status" role="status" aria-live="polite"></p>
 
     <ol class="results" id="results" hidden></ol>
@@ -40,10 +58,17 @@ const articles = await getArticles();
       <ol class="results results--static">
         {
           articles.map((article) => (
-            <li>
-              <a href={articleUrl(article)}>{article.data.title}</a>
-              <p class="results__meta">{formatDate(article.data.pubDate)}</p>
-              <p class="results__snippet">{article.data.description}</p>
+            <li data-lang={article.data.lang}>
+              <a href={articleUrl(article)} lang={article.data.lang}>
+                {article.data.title}
+              </a>
+              <p class="results__meta">
+                <span class="results__badge">{LANGUAGE_BADGE[article.data.lang]}</span>
+                {formatDateIn(article.data.pubDate, article.data.lang)}
+              </p>
+              <p class="results__snippet" lang={article.data.lang}>
+                {article.data.description}
+              </p>
             </li>
           ))
         }
@@ -61,9 +86,11 @@ const articles = await getArticles();
   const statusEl = document.getElementById('search-status');
   const staticList = document.getElementById('all-articles');
   const form = document.querySelector<HTMLFormElement>('.search__form');
+  const langButtons = [...document.querySelectorAll<HTMLButtonElement>('#lang-filter .lang-chip')];
   if (input && list && statusEl && staticList && form) {
     let documents: SearchDocument[] | null = null;
     let loading: Promise<void> | null = null;
+    let activeLang = 'all';
 
     const load = (): Promise<void> => {
       if (documents) return Promise.resolve();
@@ -93,15 +120,24 @@ const articles = await getArticles();
       }
 
       const terms = tokenize(trimmed);
-      const results = search(documents, trimmed);
+      const results = search(documents, trimmed, 12, activeLang);
       staticList.hidden = true;
       list.hidden = false;
       list.textContent = '';
 
+      const scope =
+        activeLang === 'all'
+          ? ''
+          : ` in ${
+              langButtons
+                .find((b) => b.dataset.lang === activeLang)
+                ?.textContent?.trim()
+                .replace(/\s+\d+$/, '') ?? activeLang
+            }`;
       statusEl.textContent =
         results.length === 0
-          ? `No articles match “${trimmed}”. Try a broader word, or browse the topics page.`
-          : `${results.length} result${results.length === 1 ? '' : 's'} for “${trimmed}”.`;
+          ? `No articles match “${trimmed}”${scope}. Try a broader word, another language, or browse the topics page.`
+          : `${results.length} result${results.length === 1 ? '' : 's'} for “${trimmed}”${scope}.`;
 
       for (const result of results) {
         const item = document.createElement('li');
@@ -114,11 +150,16 @@ const articles = await getArticles();
           if (part.hit) node.textContent = part.text;
           link.append(node);
         }
+        link.lang = result.doc.lang;
         const meta = document.createElement('p');
         meta.className = 'results__meta';
-        meta.textContent = [result.doc.date, ...result.doc.topics].join(' · ');
+        const badge = document.createElement('span');
+        badge.className = 'results__badge';
+        badge.textContent = result.doc.lang.toUpperCase();
+        meta.append(badge, [result.doc.date, ...result.doc.topics].join(' · '));
         const snippet = document.createElement('p');
         snippet.className = 'results__snippet';
+        snippet.lang = result.doc.lang;
         for (const part of highlight(result.snippet, terms)) {
           const node = part.hit
             ? document.createElement('mark')
@@ -138,6 +179,25 @@ const articles = await getArticles();
         void load().then(() => render(input.value));
       }, 120);
     };
+
+    // Language chips filter both the live results and the static article list,
+    // so the page behaves the same before and after a query is typed.
+    const applyLanguage = (): void => {
+      for (const button of langButtons) {
+        button.setAttribute('aria-pressed', String(button.dataset.lang === activeLang));
+      }
+      for (const item of staticList.querySelectorAll<HTMLLIElement>('li[data-lang]')) {
+        item.hidden = activeLang !== 'all' && item.dataset.lang !== activeLang;
+      }
+      render(input.value);
+    };
+
+    for (const button of langButtons) {
+      button.addEventListener('click', () => {
+        activeLang = button.dataset.lang ?? 'all';
+        void load().then(applyLanguage);
+      });
+    }
 
     input.addEventListener('input', onInput);
     input.addEventListener('focus', () => void load(), { once: true });
@@ -205,6 +265,52 @@ const articles = await getArticles();
   .search__form .viz-btn:hover {
     background: var(--c-accent-deep);
     border-color: var(--c-accent-deep);
+  }
+  .search__langs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    margin-block-start: var(--s-4);
+  }
+  .lang-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4em;
+    appearance: none;
+    font-family: var(--f-sans);
+    font-size: var(--fs-sm);
+    color: var(--c-ink-muted);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 0.35em 0.9em;
+    background: var(--c-bg-raised);
+    min-height: 2.25rem;
+    cursor: pointer;
+  }
+  .lang-chip:hover {
+    color: var(--c-ink);
+    border-color: var(--c-rule-strong);
+  }
+  .lang-chip[aria-pressed='true'] {
+    color: var(--c-bg-raised);
+    background: var(--c-ink);
+    border-color: var(--c-ink);
+  }
+  .lang-chip__count {
+    font-variant-numeric: tabular-nums;
+    font-size: var(--fs-xs);
+    opacity: 0.75;
+  }
+  .results__badge {
+    display: inline-block;
+    margin-inline-end: 0.5em;
+    font-size: 0.9em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--c-ink-muted);
+    border: 1px solid var(--c-rule-strong);
+    border-radius: 3px;
+    padding: 0 0.35em;
   }
   .search__status {
     margin-block-start: var(--s-4);

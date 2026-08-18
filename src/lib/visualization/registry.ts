@@ -20,6 +20,12 @@ const registry: Record<string, () => Promise<VizModule>> = {
   conditioning: () => import('./figures/conditioning'),
   stochastic: () => import('./figures/stochastic'),
   momentum: () => import('./figures/momentum'),
+  'prob-area': () => import('./figures/probArea'),
+  'dice-grid': () => import('./figures/diceGrid'),
+  'prob-tree': () => import('./figures/probTree'),
+  'bayes-test': () => import('./figures/bayesTest'),
+  'bayes-odds': () => import('./figures/bayesOdds'),
+  'monty-hall': () => import('./figures/montyHall'),
 };
 
 export function initVisualizations(root: ParentNode = document): void {
@@ -42,6 +48,9 @@ export function initVisualizations(root: ParentNode = document): void {
           }
         }
         if (host.dataset.describedby) options.describedBy = host.dataset.describedby;
+        // Figures used by more than one language version of an article read
+        // this to label their own controls and captions.
+        options.lang = host.dataset.lang ?? 'en';
         load()
           .then((module) => module.mount(host, options))
           .catch(() => {

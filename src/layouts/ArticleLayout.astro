@@ -5,7 +5,8 @@ import TableOfContents from '../components/article/TableOfContents.astro';
 import RelatedArticles from '../components/article/RelatedArticles.astro';
 import type { Article } from '../lib/content';
 import { articleUrl } from '../lib/content';
-import { formatDate, isoDate, readingTimeMinutes, slugify } from '../lib/text';
+import { isoDate, readingTimeMinutes, slugify } from '../lib/text';
+import { formatDateIn, t, LANGUAGE_NAME, LANGUAGE_TAG } from '../lib/i18n';
 import { SITE_TITLE, SITE_URL, AUTHOR } from '../consts';
 import 'katex/dist/katex.min.css';
 import '../styles/prose.css';
@@ -18,12 +19,21 @@ interface Props {
   related: Article[];
   newer?: Article;
   older?: Article;
+  /** The same article in the other language, if it exists. */
+  translation?: Article;
 }
 
-const { article, headings, related, newer, older } = Astro.props;
-const { title, description, pubDate, updatedDate, tags, topics, draft } = article.data;
+const { article, headings, related, newer, older, translation } = Astro.props;
+const { title, description, pubDate, updatedDate, tags, topics, draft, lang } = article.data;
 const minutes = readingTimeMinutes(article.body ?? '');
 const url = new URL(articleUrl(article), SITE_URL).href;
+const strings = t(lang);
+const alternates = translation
+  ? [
+      { lang, href: articleUrl(article) },
+      { lang: translation.data.lang, href: articleUrl(translation) },
+    ]
+  : [];
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -36,7 +46,7 @@ const jsonLd = {
   publisher: { '@type': 'Organization', name: SITE_TITLE },
   mainEntityOfPage: { '@type': 'WebPage', '@id': url },
   keywords: [...topics, ...tags].join(', '),
-  inLanguage: 'en',
+  inLanguage: LANGUAGE_TAG[lang],
 };
 ---
 
@@ -50,18 +60,20 @@ const jsonLd = {
   imageAlt={`${title} — ${SITE_TITLE}`}
   noindex={draft}
   jsonLd={jsonLd}
+  lang={lang}
+  alternates={alternates}
 >
   <div class="reading-progress" aria-hidden="true"></div>
 
   <article class="article-shell">
     <header class="article-head page">
-      {draft && <p class="draft-flag">Draft — not yet published</p>}
+      {draft && <p class="draft-flag">{strings.draft}</p>}
       <h1>{title}</h1>
       <p class="standfirst">{description}</p>
       <p class="article-meta">
-        <time datetime={isoDate(pubDate)}>{formatDate(pubDate)}</time>
+        <time datetime={isoDate(pubDate)}>{formatDateIn(pubDate, lang)}</time>
         <span aria-hidden="true">·</span>
-        <span>{minutes} min read</span>
+        <span>{strings.minRead(minutes)}</span>
         <span aria-hidden="true">·</span>
         <span>{AUTHOR}</span>
         {
@@ -69,12 +81,26 @@ const jsonLd = {
             <>
               <span aria-hidden="true">·</span>
               <span>
-                Updated <time datetime={isoDate(updatedDate)}>{formatDate(updatedDate)}</time>
+                {strings.updatedOn}{' '}
+                <time datetime={isoDate(updatedDate)}>{formatDateIn(updatedDate, lang)}</time>
               </span>
             </>
           )
         }
       </p>
+      {
+        translation && (
+          <p class="translation-link">
+            <a
+              href={articleUrl(translation)}
+              lang={translation.data.lang}
+              hreflang={translation.data.lang}
+            >
+              {strings.availableIn(LANGUAGE_NAME[translation.data.lang])}
+            </a>
+          </p>
+        )
+      }
       {
         topics.length > 0 && (
           <ul class="tag-list article-topics">
@@ -90,7 +116,7 @@ const jsonLd = {
       }
     </header>
 
-    <TableOfContents headings={headings} />
+    <TableOfContents headings={headings} label={strings.contents} countLabel={strings.sections} />
     <script is:inline>
       // The contents list is a <details> so that it can be collapsed on small
       // screens; in the wide-screen margin layout it is always open.
@@ -108,7 +134,7 @@ const jsonLd = {
     {
       tags.length > 0 && (
         <section class="foot-block">
-          <h2 class="eyebrow">Tags</h2>
+          <h2 class="eyebrow">{strings.tags}</h2>
           <ul class="tag-list">
             {tags.map((tag) => (
               <li>
@@ -125,13 +151,13 @@ const jsonLd = {
         <nav class="foot-block pager" aria-label="More articles">
           {older && (
             <a class="pager__item" href={articleUrl(older)} rel="prev">
-              <span class="eyebrow">Previous</span>
+              <span class="eyebrow">{strings.previous}</span>
               <span>{older.data.title}</span>
             </a>
           )}
           {newer && (
             <a class="pager__item pager__item--next" href={articleUrl(newer)} rel="next">
-              <span class="eyebrow">Next</span>
+              <span class="eyebrow">{strings.next}</span>
               <span>{newer.data.title}</span>
             </a>
           )}
@@ -139,15 +165,15 @@ const jsonLd = {
       )
     }
 
-    <RelatedArticles articles={related} />
+    <RelatedArticles articles={related} heading={strings.related} />
 
     {
       related.length === 0 && !newer && !older && (
         <section class="foot-block foot-note">
-          <h2 class="eyebrow">More to come</h2>
+          <h2 class="eyebrow">{strings.moreToCome}</h2>
           <p>
-            This is the first article on {SITE_TITLE}. New pieces appear every few weeks —
-            <a href="/rss.xml">follow the feed</a> or <a href="/blog/">check the archive</a>.
+            {strings.moreToComeBody} <a href="/rss.xml">{strings.followFeed}</a> ·{' '}
+            <a href="/blog/">{strings.checkArchive}</a>.
           </p>
         </section>
       )
@@ -191,6 +217,14 @@ const jsonLd = {
   }
   .article-topics {
     margin-block-start: var(--s-4);
+  }
+  .translation-link {
+    margin-block-start: var(--s-3);
+    font-size: var(--fs-sm);
+  }
+  .translation-link a {
+    color: var(--c-accent-deep);
+    text-decoration-color: color-mix(in srgb, var(--c-accent) 45%, transparent);
   }
   .draft-flag {
     display: inline-block;

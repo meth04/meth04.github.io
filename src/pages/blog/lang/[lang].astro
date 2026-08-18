@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArchiveView from '../../../components/article/ArchiveView.astro';
+import { getArticles, inLanguage } from '../../../lib/content';
+import { LANGUAGES, LANGUAGE_NAME, type Lang } from '../../../lib/i18n';
+import { SITE_TITLE } from '../../../consts';
+
+export async function getStaticPaths() {
+  const articles = await getArticles();
+  return LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang, articles: inLanguage(articles, lang), all: articles },
+  }));
+}
+
+const { lang, articles, all } = Astro.props as {
+  lang: Lang;
+  articles: Awaited<ReturnType<typeof getArticles>>;
+  all: Awaited<ReturnType<typeof getArticles>>;
+};
+---
+
+<BaseLayout
+  title={`Writing in ${LANGUAGE_NAME[lang]}`}
+  description={`Articles written in ${LANGUAGE_NAME[lang]} on ${SITE_TITLE}.`}
+  lang={lang}
+>
+  <ArchiveView articles={articles} all={all} active={lang} />
+</BaseLayout>

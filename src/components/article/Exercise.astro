@@ -1,0 +1,39 @@
+---
+/**
+ * A numbered exercise with its solution folded away, so a reader can try the
+ * problem before seeing the answer. The solution is a <details>, which means it
+ * is still present for search engines, screen readers and printing.
+ */
+interface Props {
+  number: number;
+  /** Difficulty, shown as a short label. */
+  level: string;
+  title: string;
+  id?: string;
+  /** Localized label for the collapsed solution. */
+  solutionLabel?: string;
+  /** Localized word for "Exercise". */
+  label?: string;
+}
+const {
+  number,
+  level,
+  title,
+  id,
+  solutionLabel = 'Show the solution',
+  label = 'Exercise',
+} = Astro.props;
+---
+
+<section class="exercise" id={id}>
+  <p class="exercise__head">
+    <span class="exercise__number">{label} {number}</span>
+    <span class="exercise__level">{level}</span>
+  </p>
+  <p class="exercise__title">{title}</p>
+  <div class="exercise__body"><slot /></div>
+  <details class="exercise__solution">
+    <summary>{solutionLabel}</summary>
+    <div class="exercise__solution-body"><slot name="solution" /></div>
+  </details>
+</section>

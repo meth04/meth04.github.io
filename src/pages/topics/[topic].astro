@@ -1,13 +1,18 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArticleCard from '../../components/article/ArticleCard.astro';
-import { getArticles, collectTopics, articlesInTopic } from '../../lib/content';
+import {
+  getArticles,
+  collectTopics,
+  articlesInTopic,
+  collapseTranslations,
+} from '../../lib/content';
 
 export async function getStaticPaths() {
   const articles = await getArticles();
   return collectTopics(articles).map((topic) => ({
     params: { topic: topic.slug },
-    props: { topic, articles: articlesInTopic(articles, topic.slug) },
+    props: { topic, articles: collapseTranslations(articlesInTopic(articles, topic.slug)) },
   }));
 }
 

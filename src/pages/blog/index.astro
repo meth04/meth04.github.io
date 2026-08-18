@@ -1,85 +1,15 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArticleCard from '../../components/article/ArticleCard.astro';
-import { getArticles, collectTopics } from '../../lib/content';
+import ArchiveView from '../../components/article/ArchiveView.astro';
+import { getArticles } from '../../lib/content';
 import { SITE_TITLE } from '../../consts';
 
 const articles = await getArticles();
-const topics = collectTopics(articles);
 ---
 
 <BaseLayout
   title="Writing"
-  description={`Every article published on ${SITE_TITLE}: mathematical essays with interactive visualizations.`}
+  description={`Every article published on ${SITE_TITLE}: mathematical essays in English and Vietnamese, with interactive visualizations.`}
 >
-  <div class="page index">
-    <header class="index__head">
-      <h1>Writing</h1>
-      <p class="lede">
-        {
-          articles.length === 0
-            ? 'The first article is on its way.'
-            : `${articles.length} article${articles.length === 1 ? '' : 's'}, newest first. Each one is written to be read straight through, with the visualizations there to be played with rather than watched.`
-        }
-      </p>
-      {
-        topics.length > 0 && (
-          <ul class="tag-list index__topics">
-            {topics.map((topic) => (
-              <li>
-                <a class="tag" href={`/topics/${topic.slug}/`}>
-                  {topic.label} <span aria-hidden="true">({topic.count})</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        )
-      }
-    </header>
-
-    {
-      articles.length === 0 ? (
-        <p class="empty">
-          Nothing has been published yet. The <a href="/">homepage</a> explains what will appear
-          here.
-        </p>
-      ) : (
-        <div class="index__list">
-          {articles.map((article) => (
-            <ArticleCard article={article} level={2} />
-          ))}
-        </div>
-      )
-    }
-  </div>
+  <ArchiveView articles={articles} all={articles} active="all" />
 </BaseLayout>
-
-<style>
-  .index {
-    padding-block: var(--s-7) var(--s-8);
-    max-width: calc(var(--w-wide) + var(--gutter) * 2);
-  }
-  .index__head h1 {
-    font-family: var(--f-serif);
-    font-size: clamp(1.8rem, 1.4rem + 2vw, 2.6rem);
-    letter-spacing: -0.02em;
-    font-weight: 600;
-  }
-  .lede {
-    margin-block-start: var(--s-4);
-    font-size: var(--fs-md);
-    color: var(--c-ink-soft);
-    max-width: 38em;
-    line-height: 1.6;
-  }
-  .index__topics {
-    margin-block-start: var(--s-5);
-  }
-  .index__list {
-    margin-block-start: var(--s-7);
-  }
-  .empty {
-    margin-block-start: var(--s-6);
-    color: var(--c-ink-muted);
-  }
-</style>

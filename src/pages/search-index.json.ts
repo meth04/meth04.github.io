@@ -16,6 +16,7 @@ export const GET: APIRoute = async () => {
   const documents = articles.map((article) => ({
     id: article.id,
     url: articleUrl(article),
+    lang: article.data.lang,
     title: article.data.title,
     description: article.data.description,
     date: isoDate(article.data.pubDate),
