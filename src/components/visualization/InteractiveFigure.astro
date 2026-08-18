@@ -24,16 +24,7 @@ interface Props {
    */
   reserve?: [wide: number, narrow: number];
 }
-const {
-  id,
-  label,
-  title,
-  hint,
-  viz,
-  options,
-  breakout = true,
-  reserve = [680, 800],
-} = Astro.props;
+const { id, label, title, hint, viz, options, breakout = true, reserve = [680, 800] } = Astro.props;
 const describedBy = `${id}-caption`;
 const reserveStyle = `--viz-reserve:${reserve[0]}px;--viz-reserve-narrow:${reserve[1]}px`;
 ---

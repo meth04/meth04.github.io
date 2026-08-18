@@ -497,7 +497,10 @@ $$
 \qquad\Longrightarrow\qquad
 \theta_t = (I - \eta A)^t\, \theta_0 .
 $$
-Because $A$ is diagonal the coordinates never interact, and each one contracts on its own:
+Because $A$ is diagonal the coordinates never interact, and each one contracts on its own.
+Writing $\theta_j^{(t)}$ for coordinate $j$ at iteration $t$ — the superscript is the
+iteration, the subscript the coordinate —
+
 $$
 \theta_{1}^{(t)} = (1 - \eta a)^t\, \theta_1^{(0)},
 \qquad
@@ -508,9 +511,9 @@ $|1 - \eta a| < 1$ and $|1 - \eta b| < 1$, that is, if and only if
 $$
 0 < \eta < \frac{2}{\max(a, b)} .
 $$
-A single learning rate has to keep *every* direction stable, so it is the largest
-curvature that limits it — while the smallest curvature governs how slowly the last
-direction converges. That tension is the subject of the next section.
+A single learning rate has to keep *every* direction stable, so the largest curvature sets
+the ceiling on $\eta$ — while the smallest curvature decides how slowly the flattest
+direction crawls towards the minimiser. That tension is the subject of the next section.
 
 ## Conditioning: why feature scaling matters
 
@@ -649,6 +652,12 @@ gradient, $\mathbb{E}[g_B(\theta)] = \nabla J(\theta)$, and its variance falls r
 like $1/k$. So a mini-batch gradient points in the right direction *on average* while
 costing a fraction $k/m$ of a full gradient.
 
+In practice the batches are not drawn independently: the dataset is shuffled once per
+pass and cut into consecutive blocks, so that every example is used exactly once per
+epoch. Individual batches are then no longer independent draws, and the unbiasedness
+above holds only over a whole pass — but shuffled cycling is what libraries do and it
+tends to work slightly better than independent sampling.
+
 The terminology, which is used inconsistently in the literature, is worth pinning down:
 
 <div class="table-scroll">
@@ -739,10 +748,10 @@ identical copies. Statements about *the* minimum should be read with suspicion.
 
 ## Momentum
 
-Look again at the zig-zag in Figure 5. The steep direction reverses sign at every step,
-while the shallow direction points the same way for hundreds of steps. Plain gradient
-descent cannot exploit that difference, because it has no memory: each update depends on
-the current gradient alone.
+Look again at the zig-zag in Figure 5. The steep direction reverses sign at almost every
+step, while the shallow direction keeps pointing the same way for as long as the run
+lasts. Plain gradient descent cannot exploit that difference, because it has no memory:
+each update depends on the current gradient alone.
 
 Momentum adds one state vector, a velocity $v_t \in \mathbb{R}^n$ initialised to zero:
 
@@ -909,7 +918,7 @@ The whole algorithm, and the facts that constrain it:
 | Best fixed step (quadratic) | $\eta^{\star} = 2/(\lambda_{\min} + \lambda_{\max})$, contraction $(\kappa-1)/(\kappa+1)$ |
 | Mini-batch gradient | $g_B(\theta) = \frac{1}{k}\sum_{i \in B}\nabla_\theta \ell(f_\theta(x_i), y_i)$, unbiased, variance $\sim 1/k$ |
 | Momentum | $v_{t+1} = \beta v_t - \eta \nabla J(\theta_t)$, $\theta_{t+1} = \theta_t + v_{t+1}$; persistent directions amplified by up to $1/(1-\beta)$ |
-| Stops at | stationary points: minima, maxima, saddles — the algorithm cannot tell them apart |
+| Fixed points | exactly the stationary points $\nabla J = 0$: minima, maxima and saddles alike. Maxima and strict saddles are unstable, so descent leaves them from almost every start — but it can take a very long time |
 
 </div>
 

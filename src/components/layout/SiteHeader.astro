@@ -54,6 +54,9 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
   .wordmark {
     display: inline-flex;
     align-items: center;
+    /* Keeps the mark clear of the viewport edge when the bar wraps to two
+       rows on very narrow phones. */
+    padding-block: 0.6rem;
     gap: 0.5rem;
     font-weight: 600;
     font-size: var(--fs-sm);

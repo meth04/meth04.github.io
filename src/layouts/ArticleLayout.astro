@@ -263,17 +263,19 @@ const jsonLd = {
 
   /* Reading progress: pure CSS scroll-driven animation where supported, and
      simply invisible where it is not. No JavaScript, no scroll listener. */
+  /* Sits above the sticky header so its position does not depend on the
+     header's height, which changes when the navigation wraps. */
   .reading-progress {
     position: fixed;
-    top: 3.5rem;
+    top: 0;
     left: 0;
     height: 2px;
     width: 100%;
     transform-origin: 0 50%;
     transform: scaleX(0);
     background: var(--c-accent);
-    z-index: 19;
-    opacity: 0.85;
+    z-index: 21;
+    opacity: 0.9;
   }
   @supports (animation-timeline: scroll()) {
     @media (prefers-reduced-motion: no-preference) {

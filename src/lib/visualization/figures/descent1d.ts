@@ -167,24 +167,28 @@ export function mount(host: HTMLElement, options: Record<string, unknown>): void
   }
 
   if (!reduced) {
-    loop = createLoop(host, (dt) => {
-      if (finished !== 'running') {
-        pause();
-        return;
-      }
-      progress += dt / SECONDS_PER_STEP;
-      while (progress >= 1) {
-        progress -= 1;
-        stepOnce();
+    loop = createLoop(
+      host,
+      (dt) => {
         if (finished !== 'running') {
-          progress = 0;
+          pause();
           return;
         }
-      }
-      // Between iterations only the moving point changes, so the per-frame
-      // work is a handful of attribute writes rather than a DOM rebuild.
-      renderPoint();
-    }, ANIMATION_FPS);
+        progress += dt / SECONDS_PER_STEP;
+        while (progress >= 1) {
+          progress -= 1;
+          stepOnce();
+          if (finished !== 'running') {
+            progress = 0;
+            return;
+          }
+        }
+        // Between iterations only the moving point changes, so the per-frame
+        // work is a handful of attribute writes rather than a DOM rebuild.
+        renderPoint();
+      },
+      ANIMATION_FPS,
+    );
   }
 
   /** Rebuild the parts that only change when the geometry or the run changes. */

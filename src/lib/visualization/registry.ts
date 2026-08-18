@@ -33,22 +33,22 @@ export function initVisualizations(root: ParentNode = document): void {
     whenNearViewport(
       host,
       () => {
-      let options: Record<string, unknown> = {};
-      if (host.dataset.options) {
-        try {
-          options = JSON.parse(host.dataset.options) as Record<string, unknown>;
-        } catch {
-          options = {};
+        let options: Record<string, unknown> = {};
+        if (host.dataset.options) {
+          try {
+            options = JSON.parse(host.dataset.options) as Record<string, unknown>;
+          } catch {
+            options = {};
+          }
         }
-      }
-      if (host.dataset.describedby) options.describedBy = host.dataset.describedby;
-      load()
-        .then((module) => module.mount(host, options))
-        .catch(() => {
-          // A failed chunk must not leave a blank box: the caption below the
-          // figure already carries the mathematical content.
-          host.hidden = true;
-        });
+        if (host.dataset.describedby) options.describedBy = host.dataset.describedby;
+        load()
+          .then((module) => module.mount(host, options))
+          .catch(() => {
+            // A failed chunk must not leave a blank box: the caption below the
+            // figure already carries the mathematical content.
+            host.hidden = true;
+          });
       },
       '600px',
     );
