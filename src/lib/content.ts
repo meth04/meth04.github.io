@@ -1,5 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { slugify } from './text';
+import { excerpt, slugify } from './text';
 import { DEFAULT_LANG, type Lang } from './i18n';
 
 export type Article = CollectionEntry<'blog'>;
@@ -14,6 +14,17 @@ export async function getArticles(): Promise<Article[]> {
 
 export function articleUrl(entry: Article): string {
   return `/blog/${entry.id}/`;
+}
+
+/**
+ * The article's summary: its own description when it has one, otherwise an
+ * excerpt of the opening prose. Used by cards, search, RSS, social images and
+ * the meta description, so a missing description degrades gracefully instead of
+ * failing the build.
+ */
+export function articleSummary(article: Article, maxChars = 180): string {
+  const declared = article.data.description?.trim();
+  return declared && declared.length > 0 ? declared : excerpt(article.body ?? '', maxChars);
 }
 
 /* ---------------------------------------------------------------- languages */

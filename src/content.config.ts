@@ -8,7 +8,12 @@ import { glob } from 'astro/loaders';
  */
 const articleSchema = z.object({
   title: z.string().max(120),
-  description: z.string().min(20).max(300),
+  /**
+   * Optional: an article without one still builds, and every place that needs a
+   * summary falls back to an excerpt of the opening prose. A hand-written
+   * description is still much better for search results and social cards.
+   */
+  description: z.string().max(300).optional(),
   /** Language the article is written in. Drives filtering and `<html lang>`. */
   lang: z.enum(['en', 'vi']).default('en'),
   /**

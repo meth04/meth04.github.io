@@ -58,6 +58,18 @@ export function vocabulary(text: string): string {
   return [...words].sort().join(' ');
 }
 
+/**
+ * First sentence-ish of an article, used wherever a summary is needed and the
+ * frontmatter does not provide one. Cuts on a word boundary.
+ */
+export function excerpt(source: string, maxChars = 180): string {
+  const text = toSearchText(source);
+  if (text.length <= maxChars) return text;
+  const cut = text.slice(0, maxChars);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${cut.slice(0, lastSpace > maxChars * 0.5 ? lastSpace : maxChars).trimEnd()}…`;
+}
+
 export function formatDate(date: Date): string {
   return date.toLocaleDateString('en-GB', {
     day: 'numeric',

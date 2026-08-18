@@ -1,6 +1,6 @@
 import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
-import { getArticles, articleUrl } from '../lib/content';
+import { getArticles, articleUrl, articleSummary } from '../lib/content';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
 export async function GET(context: APIContext) {
@@ -11,7 +11,7 @@ export async function GET(context: APIContext) {
     site: context.site ?? 'https://meth04.github.io',
     items: articles.map((article) => ({
       title: article.data.title,
-      description: article.data.description,
+      description: articleSummary(article, 300),
       pubDate: article.data.pubDate,
       link: articleUrl(article),
       categories: [...article.data.topics, ...article.data.tags],

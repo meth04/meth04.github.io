@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import sharp from 'sharp';
-import { getArticles } from '../../lib/content';
+import { getArticles, articleSummary } from '../../lib/content';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
 import { formatDate } from '../../lib/text';
 
@@ -32,7 +32,7 @@ export async function getStaticPaths() {
       props: {
         card: {
           title: article.data.title,
-          subtitle: article.data.description,
+          subtitle: articleSummary(article, 200),
           footer: `${SITE_TITLE} · ${formatDate(article.data.pubDate)}`,
         } satisfies Card,
       },

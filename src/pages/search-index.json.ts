@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getArticles, articleUrl } from '../lib/content';
+import { getArticles, articleUrl, articleSummary } from '../lib/content';
 import { isoDate, toSearchText, vocabulary } from '../lib/text';
 
 /**
@@ -18,7 +18,7 @@ export const GET: APIRoute = async () => {
     url: articleUrl(article),
     lang: article.data.lang,
     title: article.data.title,
-    description: article.data.description,
+    description: articleSummary(article),
     date: isoDate(article.data.pubDate),
     topics: article.data.topics,
     tags: article.data.tags,

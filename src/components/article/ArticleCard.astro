@@ -1,6 +1,6 @@
 ---
 import type { Article } from '../../lib/content';
-import { articleUrl } from '../../lib/content';
+import { articleUrl, articleSummary } from '../../lib/content';
 import { isoDate, readingTimeMinutes } from '../../lib/text';
 import { formatDateIn, t, LANGUAGE_BADGE, LANGUAGE_NAME } from '../../lib/i18n';
 
@@ -15,7 +15,8 @@ interface Props {
 }
 const { article, size = 'default', level = 3, showLanguage = true } = Astro.props;
 const Heading = `h${level}` as 'h2' | 'h3';
-const { title, description, pubDate, topics, lang } = article.data;
+const { title, pubDate, topics, lang } = article.data;
+const summary = articleSummary(article);
 const minutes = readingTimeMinutes(article.body ?? '');
 const strings = t(lang);
 ---
@@ -45,7 +46,7 @@ const strings = t(lang);
       )
     }
   </p>
-  <p class="card__desc" lang={lang}>{description}</p>
+  <p class="card__desc" lang={lang}>{summary}</p>
 </article>
 
 <style>

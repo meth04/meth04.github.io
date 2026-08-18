@@ -1,6 +1,6 @@
 ---
 import type { Article } from '../../lib/content';
-import { articleUrl } from '../../lib/content';
+import { articleUrl, articleSummary } from '../../lib/content';
 import { formatDate } from '../../lib/text';
 
 interface Props {
@@ -18,7 +18,7 @@ const { articles, heading = 'Related reading' } = Astro.props;
         {articles.map((article) => (
           <li>
             <a href={articleUrl(article)}>{article.data.title}</a>
-            <p>{article.data.description}</p>
+            <p>{articleSummary(article, 140)}</p>
             <p class="when">{formatDate(article.data.pubDate)}</p>
           </li>
         ))}

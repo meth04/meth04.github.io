@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getArticles, articleUrl, languageCounts } from '../lib/content';
+import { getArticles, articleUrl, articleSummary, languageCounts } from '../lib/content';
 import { formatDateIn, LANGUAGES, LANGUAGE_NAME, LANGUAGE_BADGE } from '../lib/i18n';
 
 // The full list is rendered server-side so that the page is useful with
@@ -67,7 +67,7 @@ const available = LANGUAGES.filter((lang) => (counts.get(lang) ?? 0) > 0);
                 {formatDateIn(article.data.pubDate, article.data.lang)}
               </p>
               <p class="results__snippet" lang={article.data.lang}>
-                {article.data.description}
+                {articleSummary(article)}
               </p>
             </li>
           ))
