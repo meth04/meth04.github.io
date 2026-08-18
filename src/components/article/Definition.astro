@@ -1,0 +1,15 @@
+---
+interface Props {
+  /** Short name of the object being defined, e.g. "Gradient". */
+  term: string;
+  id?: string;
+}
+const { term, id } = Astro.props;
+---
+
+<section class="block block--definition" id={id}>
+  <p class="block__head">
+    <span class="block__kind">Definition</span><span class="block__name">{term}</span>
+  </p>
+  <div class="block__body"><slot /></div>
+</section>

@@ -1,0 +1,39 @@
+---
+import BaseHead from '../components/layout/BaseHead.astro';
+import SiteHeader from '../components/layout/SiteHeader.astro';
+import SiteFooter from '../components/layout/SiteFooter.astro';
+import { LOCALE } from '../consts';
+import '../styles/base.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  type?: 'website' | 'article';
+  publishedTime?: Date;
+  modifiedTime?: Date;
+  image?: string;
+  imageAlt?: string;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown>;
+  /** Extra class on <main>, used by the article layout. */
+  mainClass?: string;
+}
+
+const { mainClass, ...head } = Astro.props;
+---
+
+<!doctype html>
+<html lang={LOCALE}>
+  <head>
+    <BaseHead {...head} />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <SiteHeader />
+    <main id="main" class={mainClass}>
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>

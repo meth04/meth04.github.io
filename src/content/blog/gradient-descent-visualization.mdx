@@ -1,0 +1,948 @@
+---
+title: "Gradient Descent, Visualized"
+description: "A mathematical and visual explanation of gradient descent, from the slope of a curve to multivariable optimization and the algorithms used to train machine learning models."
+pubDate: 2026-08-18
+tags:
+  - gradient descent
+  - optimization
+  - learning rate
+  - stochastic gradient descent
+  - momentum
+  - backpropagation
+topics:
+  - optimization
+  - machine learning
+  - calculus
+draft: false
+featured: true
+---
+
+import InteractiveFigure from '../../components/visualization/InteractiveFigure.astro';
+import Callout from '../../components/article/Callout.astro';
+import Definition from '../../components/article/Definition.astro';
+import Theorem from '../../components/article/Theorem.astro';
+import Proof from '../../components/article/Proof.astro';
+import Equation from '../../components/article/Equation.astro';
+import EqRef from '../../components/article/EqRef.astro';
+
+Almost every machine learning model you have heard of — linear regression, logistic
+regression, a convolutional network, a transformer — is trained by the same handful of
+steps. Measure how wrong the model currently is. Work out which way each of its numbers
+should move to make that measurement smaller. Move a little in that direction. Repeat.
+
+That procedure is **gradient descent**, and the whole of this article is an attempt to make
+each of those steps precise enough that you could implement it, and intuitive
+enough that you could sketch it on a napkin.
+
+We will start with a single number and a single curve, because everything important is
+already visible there. Then we will add dimensions, add data, add noise, and add
+momentum, checking at each stage that the picture from the previous stage still holds —
+and saying so clearly when it does not.
+
+## The training problem
+
+Suppose we want to predict a student's exam score $y$ from the number of hours $x$ they
+studied. We choose a simple model with two adjustable numbers, a slope $w$ and an
+intercept $b$:
+
+$$
+\hat{y} = w x + b .
+$$
+
+The two numbers $w$ and $b$ are the **parameters** of the model. Collect them into a
+single vector $\theta = (w, b)$. Different values of $\theta$ give different straight
+lines, and most of them fit the data badly.
+
+To say what "badly" means we need a number. For each example $i$ we compare the
+prediction $\hat{y}_i$ with the truth $y_i$, and we average the squared errors over all
+$m$ examples:
+
+<Equation id="eq-mse" number={1}>
+$$
+J(\theta) \;=\; \frac{1}{m} \sum_{i=1}^{m} \bigl( w x_i + b - y_i \bigr)^2 .
+$$
+</Equation>
+
+<Definition term="Objective function (loss function)">
+An **objective function** $J : \mathbb{R}^n \to \mathbb{R}$ assigns a single real number
+to each choice of parameters $\theta \in \mathbb{R}^n$. In machine learning it usually
+measures error, so that smaller is better; then it is also called a **loss** or **cost**
+function. *Training* the model means searching for a $\theta$ that makes $J(\theta)$
+small.
+</Definition>
+
+Two things are worth noticing straight away.
+
+First, $J$ is a function of the *parameters*, not of the data. The data $(x_i, y_i)$ are
+fixed numbers baked into the formula; what varies is $\theta$. When we later draw a
+landscape and walk downhill on it, the landscape is a landscape over parameter space.
+
+Second, we could in this particular case skip the search entirely: minimising
+<EqRef id="eq-mse" number={1} /> is a least-squares problem with a closed-form solution.
+The reason to learn gradient descent anyway is that closed forms run out almost
+immediately. Change the model to a neural network, or the loss to cross-entropy, and no
+formula for the minimiser exists. What survives is the ability to *evaluate* $J$ and to
+*differentiate* it — and that turns out to be enough.
+
+## What "downhill" actually means
+
+Before optimising anything, we need to be precise about the word "downhill". For a
+function of one variable the answer is the derivative.
+
+<Definition term="Derivative">
+For $f : \mathbb{R} \to \mathbb{R}$, the derivative at $x$ is
+$$
+f'(x) \;=\; \lim_{h \to 0} \frac{f(x + h) - f(x)}{h},
+$$
+when the limit exists. Geometrically, $f'(x)$ is the slope of the tangent line to the
+graph of $f$ at the point $(x, f(x))$: the best straight-line approximation to $f$ near
+$x$.
+</Definition>
+
+The sign of the derivative is what we care about, and it is worth stating the three cases
+explicitly, because the entire algorithm follows from them:
+
+- if $f'(x) > 0$, then $f$ is increasing at $x$: moving **right** raises the value, so
+  moving **left** lowers it;
+- if $f'(x) < 0$, then $f$ is decreasing at $x$: moving **right** lowers the value;
+- if $f'(x) = 0$, then to first order the function is flat at $x$, and the derivative
+  alone cannot tell us where to go.
+
+The magnitude matters too. A steep slope means the function changes quickly, so a short
+move changes $f$ a lot. A gentle slope means we can move further for the same change in
+$f$. Both the direction and the magnitude will show up in the update rule.
+
+<InteractiveFigure
+  id="fig-tangent"
+  label="Figure 1"
+  title="The derivative is the slope of the tangent line"
+  hint="Drag anywhere on the plot, or use the slider, to move the point along the curve."
+  viz="tangent"
+  reserve={[680, 560]}
+>
+  <strong>What to notice.</strong> The tangent line is the straight line that agrees with
+  the curve in both value and slope at the marked point. Where the curve rises to the
+  right the slope is positive and the downhill arrow points left; where the curve falls
+  to the right the slope is negative and the arrow points right. In both cases the arrow
+  points in the direction of $-f'(x)$. At the two dips and at the bump between them the
+  slope passes through zero and the arrow vanishes — those are exactly the points where
+  the first derivative stops telling us anything.
+</InteractiveFigure>
+
+The curve in Figure 1 is
+$$
+f(x) = 0.12\,x^2 + 0.8 \sin x + 3,
+\qquad
+f'(x) = 0.24\,x + 0.8 \cos x .
+$$
+It is smooth and bounded below, but it is not a simple bowl: it has a dip near
+$x \approx -1.202$, a bump near $x \approx 2.356$, and a second, shallower dip near
+$x \approx 3.294$. We will use it throughout the one-dimensional part of the article
+precisely because it is not too well behaved.
+
+## One-dimensional gradient descent
+
+We now have everything needed to write the algorithm down. Start somewhere, look at the
+slope, and take a step in the direction that decreases $f$ — that is, in the direction
+opposite to the sign of the derivative. Make the step proportional to the slope, so that
+steep regions produce long strides and flat regions produce short ones:
+
+<Equation id="eq-gd1d" number={2}>
+$$
+x_{t+1} \;=\; x_t \;-\; \eta \, f'(x_t), \qquad t = 0, 1, 2, \ldots
+$$
+</Equation>
+
+Every symbol, spelled out:
+
+- $x_t$ is the current position after $t$ steps; $x_0$ is where we chose to start.
+- $f'(x_t)$ is the derivative evaluated **at the current position**. It is recomputed
+  every iteration; it is not a fixed number.
+- $\eta > 0$ (the Greek letter *eta*) is the **learning rate** or **step size**. It is
+  chosen by us, not by the algorithm.
+- The minus sign is what makes this *descent*. With a plus sign the same formula climbs.
+- The step actually taken is $-\eta f'(x_t)$, so its length is $\eta \, |f'(x_t)|$: the
+  learning rate multiplied by the steepness.
+
+That last point is the one most worth internalising, and Figure 2 is built around it. The
+steps shrink as the iterates approach a flat point *even though $\eta$ never changes*.
+Gradient descent slows down near a minimum automatically.
+
+<InteractiveFigure
+  id="fig-descent-1d"
+  label="Figure 2"
+  title="Gradient descent, one step at a time"
+  hint="Press Step to take one iteration, or Play to run it. Move x₀ and η and watch where the iterates end up."
+  viz="descent-1d"
+  reserve={[680, 670]}
+>
+  <strong>What to notice.</strong> The arrow along the bottom of the panel is the step
+  $-\eta f'(x_t)$, drawn to scale. Starting from $x_0 = 4.6$ with $\eta = 0.6$ the
+  iterates walk down into the *right-hand* dip and stop there — a local minimum, not the
+  global one. Drag $x_0$ to the left of the bump at $x \approx 2.356$ and the same
+  algorithm with the same learning rate finds the global minimum instead. Gradient
+  descent has no memory and no map: it only ever sees the slope under its feet, so where
+  it starts decides which valley it ends in.
+</InteractiveFigure>
+
+<Callout type="note" title="When do we stop?">
+In practice one stops when the gradient is small ($|f'(x_t)| < \varepsilon$), when the
+objective stops improving, when a validation metric stops improving, or simply when the
+computational budget runs out. Figure 2 uses the first of these with
+$\varepsilon = 10^{-3}$. None of these criteria proves that a minimum has been reached —
+they only report that progress has stalled.
+</Callout>
+
+## Why the *negative* derivative?
+
+It is easy to accept the minus sign in <EqRef id="eq-gd1d" number={2} /> as a convention.
+It is better to see that it is forced.
+
+Fix a point $x$ with $f'(x) \neq 0$, and consider moving by a small amount $\Delta$. By
+the definition of the derivative,
+
+<Equation id="eq-taylor1d" number={3}>
+$$
+f(x + \Delta) \;=\; f(x) + f'(x)\,\Delta + o(|\Delta|)
+\qquad \text{as } \Delta \to 0 ,
+$$
+</Equation>
+
+where $o(|\Delta|)$ denotes a remainder that becomes negligible compared with $|\Delta|$
+as $\Delta \to 0$. Ignore the remainder for a moment. The change in the function value is
+approximately $f'(x)\,\Delta$, and we want that to be **negative**. Since $\Delta$ is ours
+to choose, there are exactly two useful cases:
+
+- if $f'(x) > 0$ we need $\Delta < 0$ — step in the negative direction;
+- if $f'(x) < 0$ we need $\Delta > 0$ — step in the positive direction.
+
+Both cases are summarised by choosing $\Delta$ to have the opposite sign to $f'(x)$, and
+the simplest such choice that also scales with the steepness is
+$$
+\Delta = -\eta\, f'(x), \qquad \eta > 0 ,
+$$
+which gives
+$$
+f'(x)\,\Delta \;=\; -\eta \, \bigl(f'(x)\bigr)^2 \;\le\; 0 ,
+$$
+with equality only when $f'(x) = 0$. The square is the point: whatever the sign of the
+derivative, its square is non-negative, so the predicted change in $f$ is never positive.
+The minus sign in the update rule is not a convention — it is the only way to make the
+first-order term work in our favour.
+
+<Callout type="warning" title="“Approximately” is doing real work here">
+Equation <EqRef id="eq-taylor1d" number={3} /> only says that the linear model of $f$ is
+good *near* $x$. If $\eta$ is large, the step leaves the region where the approximation
+holds and the guarantee evaporates. The next section makes the loophole visible; the
+section after that closes it with an explicit condition on $\eta$.
+</Callout>
+
+## The learning rate
+
+The learning rate is the one number in <EqRef id="eq-gd1d" number={2} /> that we must
+choose, and it is the one that most often decides whether training works. Three regimes
+are worth recognising by sight.
+
+<InteractiveFigure
+  id="fig-learning-rate"
+  label="Figure 3"
+  title="The same descent at three learning rates"
+  hint="One starting point, three values of η. Drag the iteration slider, or press Play."
+  viz="learning-rate"
+  reserve={[470, 1290]}
+>
+  <strong>What to notice.</strong> Everything except $\eta$ is identical across the three
+  panels, so every difference between them is caused by the learning rate alone. With
+  $\eta = 0.05$ the direction is right but progress is glacial — about 115 iterations to
+  reach $|f'| < 0.01$. With $\eta = 0.6$ the same tolerance is reached in 7. With
+  $\eta = 2.4$ the iterates jump straight over the valley floor and bounce between its two
+  walls forever: near the minimiser $x^{\star} \approx -1.202$ the curvature is
+  $f''(x^{\star}) \approx 0.986$, and the steps only shrink when
+  $\eta < 2/f''(x^{\star}) \approx 2.03$.
+</InteractiveFigure>
+
+The three behaviours have names and causes:
+
+- **Too small.** Each step is a fraction of the distance it could safely cover. Nothing
+  goes wrong except that you pay for a thousand iterations to do the work of ten.
+- **Well chosen.** Steps are large enough to make real progress and small enough that
+  each one lands where the linear approximation predicted.
+- **Too large.** The step overshoots the minimum by more than it approached it, so the
+  next step is *longer* than the last. The iterates oscillate with growing amplitude
+  until some other feature of the function catches them.
+
+That last sentence deserves a caveat that is often missed. "Too large" does not always
+mean "runs off to infinity". In Figure 3 the iterates with $\eta = 2.4$ stay in a bounded
+region and settle into a repeating cycle, because the $\sin$ term keeps re-flattening the
+curve further out. Divergence to infinity is what happens for a quadratic; general
+functions can also oscillate indefinitely, wander chaotically, or land in a completely
+different valley. All of these count as failure to converge.
+
+Near a minimiser $x^{\star}$ of a twice-differentiable function the local picture is
+always the same. Writing $e_t = x_t - x^{\star}$ and expanding $f'$ around $x^{\star}$
+(where $f'(x^{\star}) = 0$) gives
+$$
+e_{t+1} \;=\; \bigl(1 - \eta f''(x^{\star})\bigr) e_t + o(|e_t|) ,
+$$
+so the error is multiplied by roughly $|1 - \eta f''(x^{\star})|$ at each step. This is
+less than $1$ — that is, the iterates are locally attracted to $x^{\star}$ — exactly when
+$$
+0 < \eta < \frac{2}{f''(x^{\star})} ,
+$$
+assuming $f''(x^{\star}) > 0$. The fastest local contraction comes from
+$\eta = 1/f''(x^{\star})$, which kills the linear term entirely. Two lessons follow, and
+both generalise to many dimensions: **the safe range of learning rates is set by the
+curvature**, and **there is no universally good $\eta$**, because curvature is a property
+of the particular objective you happen to be minimising.
+
+## A guarantee, not just a hope
+
+So far we have argued that a *sufficiently small* step decreases $f$. "Sufficiently
+small" is unsatisfying. With one extra assumption we can say exactly how small, and get a
+decrease we can prove.
+
+<Definition term="L-smooth function">
+A differentiable function $J : \mathbb{R}^n \to \mathbb{R}$ is **$L$-smooth** if its
+gradient is Lipschitz continuous with constant $L$:
+$$
+\lVert \nabla J(\theta) - \nabla J(\phi) \rVert \;\le\; L \lVert \theta - \phi \rVert
+\qquad \text{for all } \theta, \phi \in \mathbb{R}^n .
+$$
+Informally: the slope cannot change arbitrarily fast, so a linear approximation stays
+trustworthy over a predictable distance. For a twice-differentiable $J$ this is
+equivalent to the eigenvalues of the Hessian being bounded in absolute value by $L$.
+</Definition>
+
+<Theorem kind="Theorem" number={1} name="descent lemma" id="thm-descent">
+Let $J$ be $L$-smooth and let $\theta^{+} = \theta - \eta \nabla J(\theta)$. Then
+$$
+J(\theta^{+}) \;\le\; J(\theta) \;-\; \eta\Bigl(1 - \frac{L\eta}{2}\Bigr)
+\lVert \nabla J(\theta) \rVert^2 .
+$$
+In particular, if $0 < \eta < 2/L$ and $\nabla J(\theta) \neq 0$, then
+$J(\theta^{+}) < J(\theta)$: the step is guaranteed to reduce the objective.
+</Theorem>
+
+<Proof>
+Write $\Delta = \theta^{+} - \theta = -\eta \nabla J(\theta)$ for the step taken. The map
+$s \mapsto J(\theta + s\Delta)$ is differentiable on $[0,1]$ with derivative
+$\nabla J(\theta + s\Delta)^{\!\top}\Delta$ by the chain rule, so the fundamental theorem
+of calculus gives
+
+$$
+\begin{aligned}
+J(\theta^{+}) - J(\theta)
+&= \int_0^1 \nabla J(\theta + s\Delta)^{\!\top}\, \Delta \;\mathrm{d}s \\[2pt]
+&= \nabla J(\theta)^{\!\top} \Delta
+ + \int_0^1 \bigl( \nabla J(\theta + s\Delta) - \nabla J(\theta) \bigr)^{\!\top} \Delta
+ \;\mathrm{d}s .
+\end{aligned}
+$$
+
+Bounding the integrand with Cauchy–Schwarz and then $L$-smoothness,
+
+$$
+\begin{aligned}
+\bigl( \nabla J(\theta + s\Delta) - \nabla J(\theta) \bigr)^{\!\top} \Delta
+&\;\le\; \lVert \nabla J(\theta + s\Delta) - \nabla J(\theta) \rVert \, \lVert \Delta \rVert \\[2pt]
+&\;\le\; L s \lVert \Delta \rVert^2 ,
+\end{aligned}
+$$
+
+and $\int_0^1 L s \lVert \Delta \rVert^2 \,\mathrm{d}s = (L/2)\lVert \Delta \rVert^2$.
+Hence
+
+$$
+J(\theta^{+}) \;\le\; J(\theta) + \nabla J(\theta)^{\!\top} \Delta
++ \frac{L}{2}\lVert \Delta\rVert^2 .
+$$
+
+Substituting $\Delta = -\eta \nabla J(\theta)$ turns the middle term into
+$-\eta\lVert \nabla J(\theta)\rVert^2$ and the last into
+$(L\eta^2/2)\lVert\nabla J(\theta)\rVert^2$, which is the claim. The final
+sentence follows because $\eta(1 - L\eta/2) > 0$ precisely when $0 < \eta < 2/L$.
+</Proof>
+
+This is the mathematical bridge between the intuition and the algorithm. It tells us
+three things at once. Gradient descent makes progress at every step, provided $\eta$ is
+small enough. The threshold $2/L$ is set by the curvature, matching what we found by
+hand in one dimension. And the amount of progress is proportional to
+$\lVert \nabla J \rVert^2$, so it dries up exactly where the gradient does.
+
+<Callout type="note" title="What this does not say">
+The descent lemma guarantees that each step decreases $J$; it does **not** guarantee
+convergence to a global minimum. Summing the inequality over $T$ steps shows only that
+the smallest gradient norm seen so far shrinks like $O(1/\sqrt{T})$ — the iterates
+approach a *stationary* point. Getting to a global minimum additionally requires
+structure such as convexity, which loss surfaces of neural networks do not have.
+</Callout>
+
+## More than one parameter: the gradient
+
+Real models have more than one number to tune, so $J$ is a function of a vector. The
+object that replaces the derivative is the gradient.
+
+<Definition term="Gradient">
+For a differentiable $J : \mathbb{R}^n \to \mathbb{R}$, the **gradient** at $\theta$ is
+the vector of partial derivatives
+$$
+\nabla J(\theta) \;=\;
+\Bigl( \frac{\partial J}{\partial \theta_1}(\theta), \; \ldots, \;
+\frac{\partial J}{\partial \theta_n}(\theta) \Bigr)^{\!\top} \in \mathbb{R}^n .
+$$
+The $j$-th component answers a self-contained question: *if I nudge only
+$\theta_j$ and hold every other parameter fixed, at what rate does $J$ change?*
+</Definition>
+
+The gradient is a *vector*, not a number, and it lives in the same space as $\theta$
+itself — which is what makes the update rule type-correct:
+
+<Equation id="eq-gd" number={4}>
+$$
+\theta_{t+1} \;=\; \theta_t \;-\; \eta \, \nabla J(\theta_t) .
+$$
+</Equation>
+
+Compare this with <EqRef id="eq-gd1d" number={2} />: nothing has changed except that
+scalars have become vectors. Each parameter is updated by its own partial derivative, all
+of them simultaneously, using the gradient evaluated at the *current* point.
+
+Two geometric facts make the gradient the natural object here.
+
+<Theorem kind="Proposition" number={1} name="steepest ascent" id="prop-steepest">
+Let $\nabla J(\theta) \neq 0$. Among all unit vectors $u \in \mathbb{R}^n$
+($\lVert u \rVert_2 = 1$), the directional derivative
+$D_u J(\theta) = \nabla J(\theta)^{\!\top} u$ is largest for
+$u = \nabla J(\theta)/\lVert \nabla J(\theta) \rVert$ and smallest for
+$u = -\nabla J(\theta)/\lVert \nabla J(\theta) \rVert$.
+</Theorem>
+
+<Proof>
+By the Cauchy–Schwarz inequality,
+$|\nabla J(\theta)^{\!\top} u| \le \lVert \nabla J(\theta)\rVert \lVert u \rVert
+= \lVert \nabla J(\theta) \rVert$, with equality exactly when $u$ is a scalar multiple of
+$\nabla J(\theta)$. The positive multiple attains $+\lVert\nabla J(\theta)\rVert$ and the
+negative one attains $-\lVert\nabla J(\theta)\rVert$.
+</Proof>
+
+So $\nabla J$ points in the direction of steepest *increase*, and $-\nabla J$ in the
+direction of steepest *decrease*. This is the single most misquoted fact in the subject,
+so it is worth saying plainly: **the gradient points uphill.** Gradient *descent* moves
+against it.
+
+<Callout type="warning" title="“Steepest” with respect to what?">
+Proposition 1 measures the length of $u$ with the Euclidean norm. That choice is a
+modelling decision, not a law. Under a different inner product — equivalently, after
+rescaling the parameters — the steepest-descent direction is a different vector, namely
+$-M^{-1}\nabla J(\theta)$ for the corresponding positive-definite matrix $M$. Newton's
+method ($M$ = Hessian) and natural gradient methods ($M$ = Fisher information) are
+exactly this idea. "The negative gradient is the direction of steepest descent" is a
+statement about the *first-order behaviour of $J$ in the Euclidean geometry we happened
+to put on parameter space*.
+</Callout>
+
+The second fact explains what the gradient looks like on a contour map.
+
+<Theorem kind="Proposition" number={2} name="gradients are normal to level sets" id="prop-normal">
+Let $c : (-\varepsilon, \varepsilon) \to \mathbb{R}^n$ be a differentiable curve lying
+inside the level set $\{\phi : J(\phi) = J(\theta)\}$, with $c(0) = \theta$. Then
+$\nabla J(\theta)^{\!\top} c'(0) = 0$: the gradient is orthogonal to every tangent
+direction of the level set through $\theta$.
+</Theorem>
+
+<Proof>
+The composite $s \mapsto J(c(s))$ is constant, so its derivative is zero. By the chain
+rule that derivative equals $\nabla J(c(s))^{\!\top} c'(s)$; evaluating at $s = 0$ gives
+the claim.
+</Proof>
+
+## Reading the contour map
+
+A contour map of $J$ draws the level sets — the sets of parameters that give the same
+loss — the way a topographic map draws lines of constant altitude. Closely spaced
+contours mean steep terrain; widely spaced contours mean flat terrain.
+
+Figure 4 uses the simplest interesting example, an elliptical bowl
+$$
+J(\theta_1, \theta_2) = \tfrac{1}{2}\bigl(a\,\theta_1^2 + b\,\theta_2^2\bigr),
+\qquad
+\nabla J(\theta) = (a\,\theta_1,\; b\,\theta_2)^{\!\top},
+$$
+whose minimiser is at the origin. Because the two axes are drawn to the same scale, the
+right angle between the gradient and the level set is a genuine right angle on screen.
+
+<InteractiveFigure
+  id="fig-contour"
+  label="Figure 4"
+  title="Gradient descent on a contour map"
+  hint="Drag anywhere on the map to move the starting point, or use the sliders. Press Play to run the iteration."
+  viz="contour"
+  reserve={[790, 980]}
+>
+  <strong>What to notice.</strong> Three things are drawn at the current point: the
+  direction of $\nabla J$ (uphill), the actual update $-\eta \nabla J$ drawn to scale, and
+  the level set through the point. The gradient meets the level set at a right angle
+  everywhere, exactly as Proposition 2 requires. Raise the curvature ratio $b\,{:}\,a$ and
+  the contours stretch into long ellipses; the gradient then points mostly *across* the
+  valley rather than along it, and the path develops the characteristic zig-zag. Raise
+  $\eta$ past $2/b$ and the $\theta_2$ component grows instead of shrinking, which is the
+  two-dimensional version of the overshooting seen in Figure 3.
+</InteractiveFigure>
+
+For this quadratic the iteration can be solved exactly, which is worth doing once because
+it explains everything else in the article. With $A = \operatorname{diag}(a, b)$ we have
+$\nabla J(\theta) = A\theta$, so
+$$
+\theta_{t+1} = \theta_t - \eta A \theta_t = (I - \eta A)\,\theta_t
+\qquad\Longrightarrow\qquad
+\theta_t = (I - \eta A)^t\, \theta_0 .
+$$
+Because $A$ is diagonal the coordinates never interact, and each one contracts on its own:
+$$
+\theta_{1}^{(t)} = (1 - \eta a)^t\, \theta_1^{(0)},
+\qquad
+\theta_{2}^{(t)} = (1 - \eta b)^t\, \theta_2^{(0)} .
+$$
+The iterates converge to the minimiser from every starting point if and only if
+$|1 - \eta a| < 1$ and $|1 - \eta b| < 1$, that is, if and only if
+$$
+0 < \eta < \frac{2}{\max(a, b)} .
+$$
+A single learning rate has to keep *every* direction stable, so it is the largest
+curvature that limits it — while the smallest curvature governs how slowly the last
+direction converges. That tension is the subject of the next section.
+
+## Conditioning: why feature scaling matters
+
+<Definition term="Condition number">
+For a quadratic objective with positive-definite Hessian $A$, the **condition number** is
+$$
+\kappa = \frac{\lambda_{\max}(A)}{\lambda_{\min}(A)} \;\ge\; 1 ,
+$$
+the ratio of the largest to the smallest curvature. A problem with $\kappa$ close to $1$
+is *well-conditioned* (round contours); a problem with large $\kappa$ is
+*ill-conditioned* (long, thin contours).
+</Definition>
+
+Keeping every direction stable forces $\eta \le 2/\lambda_{\max}$, but the flattest
+direction then contracts by only about $1 - 2\lambda_{\min}/\lambda_{\max}$ per step. The
+best fixed learning rate balances the two extremes at
+$\eta^{\star} = 2/(\lambda_{\min} + \lambda_{\max})$, and with that choice the distance to
+the minimiser shrinks by a factor
+$$
+\Bigl| \frac{\kappa - 1}{\kappa + 1} \Bigr|
+$$
+per iteration in the worst case. For $\kappa = 1$ this factor is $0$ — one step solves the
+problem. For $\kappa = 100$ it is $0.980$, so roughly $115$ iterations are needed to gain
+a single factor of ten in accuracy.
+
+<InteractiveFigure
+  id="fig-conditioning"
+  label="Figure 5"
+  title="A round bowl and a stretched one"
+  hint="Change κ to stretch the right-hand bowl. Both panels use the best fixed step size for their own bowl."
+  viz="conditioning"
+  reserve={[630, 900]}
+>
+  <strong>What to notice.</strong> Each panel runs with the learning rate that is optimal
+  *for that panel*, so the comparison is not rigged by a badly chosen $\eta$. The round
+  bowl is solved in one step: its gradient points straight at the minimiser. The stretched
+  bowl produces the zig-zag — each step corrects the steep direction, overshoots it
+  slightly, and makes only a little progress along the shallow valley floor. The reported
+  iteration counts track the predicted factor $(\kappa-1)/(\kappa+1)$ closely.
+</InteractiveFigure>
+
+This is why input scaling is not cosmetic. If one feature is measured in metres and
+another in millimetres, the curvature of the least-squares objective differs between the
+two corresponding parameters by a factor of a million, and $\kappa$ inherits it.
+Standardising features so that each has comparable scale is, in this language, an attempt
+to reduce $\kappa$ before optimisation begins. Batch normalisation, careful weight
+initialisation and adaptive optimisers such as Adam all attack the same problem from
+different directions.
+
+<Callout type="warning" title="A quadratic is a model of a loss surface, not a loss surface">
+Everything in this section is exact for quadratics and *approximately* true near a
+non-degenerate minimum of a smooth function, where the Hessian dominates the local
+behaviour. Far from a minimum, or for a deep network, the landscape is not a bowl and
+$\kappa$ is not even constant. Use quadratics as intuition and as a source of precise
+statements — not as a claim about what a real loss surface looks like.
+</Callout>
+
+## Where the objective comes from
+
+Up to now $J$ has been handed to us. In supervised learning it is built from data, a
+model and a per-example loss.
+
+You have a dataset of $m$ pairs $(x_i, y_i)$, a model $f_\theta$ that maps an input to a
+prediction, and a per-example loss $\ell(\hat{y}, y)$ that scores a single prediction.
+The training objective is the average per-example loss:
+
+<Equation id="eq-erm" number={5}>
+$$
+J(\theta) \;=\; \frac{1}{m} \sum_{i=1}^{m} \ell\bigl(f_\theta(x_i),\, y_i\bigr) .
+$$
+</Equation>
+
+This is called the **empirical risk**: the average loss on the data you have, standing in
+for the average loss on data you do not have. Minimising it is *empirical risk
+minimisation*. Every part of the formula is a modelling choice — squared error and
+cross-entropy are two common choices of $\ell$ — but the shape is always the same: a sum
+over examples, divided by their number.
+
+Because differentiation is linear, the gradient of a sum is the sum of the gradients:
+
+$$
+\nabla J(\theta) \;=\; \frac{1}{m} \sum_{i=1}^{m} \nabla_\theta\,
+\ell\bigl(f_\theta(x_i), y_i\bigr) .
+$$
+
+This single line is responsible for most of the engineering of modern machine learning.
+It says the cost of one exact gradient is proportional to the size of the dataset — and
+it is what mini-batching exploits.
+
+For the linear model of the opening section, with squared error, the chain rule gives the
+gradient explicitly. Writing the residual of example $i$ as
+$r_i = w x_i + b - y_i$,
+
+$$
+\frac{\partial J}{\partial w} = \frac{2}{m}\sum_{i=1}^m r_i\, x_i ,
+\qquad
+\frac{\partial J}{\partial b} = \frac{2}{m}\sum_{i=1}^m r_i .
+$$
+
+Both formulas are readable as sentences. The intercept moves in proportion to the
+*average* residual: if the line sits below the data on average, raise it. The slope moves
+in proportion to the *correlation* between the residual and the input: if the line is too
+low for large $x$ and too high for small $x$, tilt it up.
+
+The full training loop is then a cycle:
+
+$$
+\text{data} \;\to\; \text{model} \;\to\; \text{prediction} \;\to\; \text{loss}
+\;\to\; \text{gradient} \;\to\; \text{parameter update} \;\to\; \text{model} \;\to\; \cdots
+$$
+
+Only the last arrow is gradient descent. Everything before it is bookkeeping about how
+the number $J(\theta)$ was computed.
+
+## Batch, stochastic and mini-batch
+
+Computing $\nabla J$ exactly means touching all $m$ examples for a single update. With
+$m$ in the millions, that is a great deal of work for one step of a procedure that will
+need thousands of steps.
+
+The way out is to notice that <EqRef id="eq-erm" number={5} /> is an average, and averages
+can be estimated from samples. Choose a subset $B \subseteq \{1, \ldots, m\}$ of size $k$
+and use
+
+<Equation id="eq-minibatch" number={6}>
+$$
+g_B(\theta) \;=\; \frac{1}{k} \sum_{i \in B} \nabla_\theta\,
+\ell\bigl(f_\theta(x_i), y_i\bigr),
+\qquad
+\theta_{t+1} = \theta_t - \eta\, g_{B_t}(\theta_t) .
+$$
+</Equation>
+
+If $B$ is drawn uniformly at random then $g_B$ is an **unbiased** estimate of the true
+gradient, $\mathbb{E}[g_B(\theta)] = \nabla J(\theta)$, and its variance falls roughly
+like $1/k$. So a mini-batch gradient points in the right direction *on average* while
+costing a fraction $k/m$ of a full gradient.
+
+The terminology, which is used inconsistently in the literature, is worth pinning down:
+
+<div class="table-scroll">
+
+| Name | Examples per update | Updates per pass over the data |
+| --- | --- | --- |
+| Batch (full-batch) gradient descent | all $m$ | $1$ |
+| Stochastic gradient descent, strict sense | $1$ | $m$ |
+| Mini-batch SGD | $k$, typically $16$–$1024$ | $\lceil m/k \rceil$ |
+
+</div>
+
+In modern usage "SGD" almost always means the mini-batch version; the optimiser called
+`SGD` in PyTorch or TensorFlow uses whatever batch size the data loader supplies. Reading
+"SGD" as "exactly one example" is a common and avoidable misunderstanding.
+
+<InteractiveFigure
+  id="fig-stochastic"
+  label="Figure 6"
+  title="Full-batch and mini-batch paths on a real least-squares problem"
+  hint="Set the batch size k and press Play. Highlighted points are the examples used by the current update."
+  viz="stochastic"
+  reserve={[640, 1230]}
+>
+  <strong>What to notice.</strong> Both runs minimise the same objective — the mean
+  squared error of a line fitted to 40 points — and start from the same parameters. The
+  full-batch path is smooth and stops at the optimum. The mini-batch path is jagged,
+  because each update responds to only $k$ examples, and near the optimum it does not
+  stop: it circles inside a region whose size grows with $\eta$ and shrinks with $k$. Set
+  $k = 40$ and the two paths coincide exactly, since the mini-batch gradient then *is*
+  the full gradient.
+</InteractiveFigure>
+
+The trade-off is therefore not "SGD is faster". It is:
+
+- **Cost per update.** Mini-batches are cheaper by a factor of $m/k$, so you get many
+  more updates for the same arithmetic. This is usually decisive.
+- **Quality per update.** Each direction is noisier, so individual steps are less
+  productive; you are trading accuracy per step for number of steps.
+- **Asymptotic behaviour.** With a *constant* learning rate, mini-batch SGD does not
+  converge to a minimiser; it converges to a distribution concentrated around one, with
+  spread proportional to $\eta$ and to the gradient noise. Convergence in the strict
+  sense requires a decreasing schedule — the classical Robbins–Monro conditions
+  $\sum_t \eta_t = \infty$ and $\sum_t \eta_t^2 < \infty$ — or a decay schedule chosen
+  empirically, which is why learning-rate schedules are standard practice.
+- **Hardware.** Very small batches under-use vectorised hardware; very large ones
+  restore the full-batch cost. The practical optimum is set by memory bandwidth and
+  parallelism as much as by mathematics.
+
+<Callout type="note" title="Noise is not purely a cost">
+Gradient noise sometimes helps: it can knock the iterates out of sharp, narrow minima and
+out of the neighbourhood of saddle points, and it acts as a weak regulariser. These
+effects are real and measurable, but they are empirical tendencies rather than theorems —
+be sceptical of any confident story about *why* SGD generalises well.
+</Callout>
+
+## What changes in a neural network
+
+Nothing in <EqRef id="eq-gd" number={4} /> changes. What changes is the difficulty of
+computing $\nabla J$, and the shape of the landscape it describes.
+
+A network with $n$ parameters defines $f_\theta$ as a composition of many simple
+functions — matrix multiplications, biases, element-wise nonlinearities. The loss is a
+scalar function of all $n$ parameters at once, and $n$ can be in the billions. Estimating
+each partial derivative by finite differences would need $n$ extra forward passes, which
+is hopeless.
+
+**Backpropagation** is what makes it feasible. It is reverse-mode automatic
+differentiation applied to the computational graph of the network: one forward pass
+computes and caches intermediate values, then one backward pass applies the chain rule
+from the loss backwards through the graph, producing *all* $n$ partial derivatives at a
+cost comparable to a couple of forward passes.
+
+<Callout type="misconception" title="Backpropagation is not gradient descent">
+<span class="claim">Backpropagation is the algorithm that trains neural networks.</span>
+Backpropagation **computes the gradient**. Gradient descent **uses the gradient to update
+the parameters**. They are separate steps and can be replaced independently: you can feed
+backpropagated gradients to SGD, to Adam, or to L-BFGS; and you can run gradient descent
+on gradients obtained by other means entirely, such as finite differences or symbolic
+differentiation. In code the distinction is usually one line — `loss.backward()`
+computes, `optimizer.step()` updates.
+</Callout>
+
+The landscape itself is genuinely different from our two-dimensional bowls. It is
+non-convex, it has many stationary points, and it is invariant under symmetries — permute
+two hidden units and the loss is unchanged, so every minimum comes with a large number of
+identical copies. Statements about *the* minimum should be read with suspicion.
+
+## Momentum
+
+Look again at the zig-zag in Figure 5. The steep direction reverses sign at every step,
+while the shallow direction points the same way for hundreds of steps. Plain gradient
+descent cannot exploit that difference, because it has no memory: each update depends on
+the current gradient alone.
+
+Momentum adds one state vector, a velocity $v_t \in \mathbb{R}^n$ initialised to zero:
+
+<Equation id="eq-momentum" number={7}>
+$$
+v_{t+1} = \beta\, v_t - \eta\, \nabla J(\theta_t),
+\qquad
+\theta_{t+1} = \theta_t + v_{t+1},
+\qquad \beta \in [0, 1) .
+$$
+</Equation>
+
+The velocity is a decaying running sum of past gradients. Setting $\beta = 0$ recovers
+plain gradient descent exactly. The mechanism is easiest to see in two extreme cases:
+
+- **Consistent gradients.** If $\nabla J$ were constant and equal to $g$, the velocity
+  would converge to the geometric sum
+  $v_\infty = -\eta g\,(1 + \beta + \beta^2 + \cdots) = -\dfrac{\eta g}{1 - \beta}$.
+  Steps along a persistent direction are therefore amplified by up to
+  $1/(1-\beta)$ — a factor of $10$ at $\beta = 0.9$.
+- **Alternating gradients.** If $\nabla J$ flips sign every step, consecutive
+  contributions to $v$ largely cancel, and the oscillation is damped rather than
+  amplified.
+
+The zig-zag direction is the second case; the valley floor is the first. That is the
+whole idea.
+
+<InteractiveFigure
+  id="fig-momentum"
+  label="Figure 7"
+  title="Plain gradient descent versus momentum in a narrow valley"
+  hint="Both runs use the same η. Change β and compare the two paths and the two distances."
+  viz="momentum"
+  reserve={[700, 840]}
+>
+  <strong>What to notice.</strong> Both runs use $\eta = 0.1$. Drag $\beta$ to $0$ and the
+  two paths coincide exactly — momentum with zero $\beta$ *is* gradient descent. At the
+  default $\beta = 0.5$ the purple path stops bouncing across the valley and curves along
+  it, ending roughly $500$ times closer to the minimiser after the same $30$ iterations,
+  for the same arithmetic per iteration. Push $\beta$ up to $0.85$ and beyond and the path
+  overshoots and rings — momentum widens the range of usable step sizes, it does not
+  remove the limit. For this bowl the theoretical best is
+  $\beta = \bigl((\sqrt{\kappa}-1)/(\sqrt{\kappa}+1)\bigr)^2 = 0.36$ with a matched $\eta$.
+</InteractiveFigure>
+
+Two remarks for readers who will meet these methods again. The variant above is Polyak's
+*heavy ball* method; Nesterov's *accelerated gradient* differs by evaluating the gradient
+at a look-ahead point $\theta_t + \beta v_t$ instead of at $\theta_t$, which improves the
+worst-case rate on convex problems. And **Adam**, the default optimiser in much of deep
+learning, combines a momentum-like average of gradients with a per-parameter scaling by a
+running average of squared gradients — an attempt, in the language of the conditioning
+section, to reduce the effective $\kappa$ that any single learning rate must cope with.
+
+## Stationary points: minima, saddles and plateaus
+
+Gradient descent stops moving where $\nabla J = 0$. It is essential to know what such
+points can be.
+
+<Definition term="Stationary point">
+$\theta^{\star}$ is a **stationary point** (or critical point) of a differentiable $J$ if
+$\nabla J(\theta^{\star}) = 0$. For twice-differentiable $J$ the Hessian
+$H = \nabla^2 J(\theta^{\star})$ classifies most of them:
+<ul>
+<li>$H$ positive definite (all eigenvalues $> 0$) — a strict local **minimum**;</li>
+<li>$H$ negative definite (all eigenvalues $< 0$) — a strict local **maximum**;</li>
+<li>$H$ indefinite (eigenvalues of both signs) — a **saddle point**;</li>
+<li>$H$ singular — the second-order test is inconclusive.</li>
+</ul>
+</Definition>
+
+The three cases that matter in practice:
+
+**Local minima.** A point that is lowest in its own neighbourhood but not necessarily
+globally. Figure 2 shows one being found. Gradient descent cannot tell the difference
+between a local and a global minimum, because it only ever sees local information. For
+*convex* objectives the distinction disappears — every local minimum is global — which is
+why convexity is prized. Linear regression with squared error is convex; a neural network
+is not.
+
+**Saddle points.** A point that curves upwards in some directions and downwards in
+others: a mountain pass. The gradient vanishes there, so the update rule stalls, yet the
+point is not a minimum — there are directions of strict descent available. In high
+dimensions saddles are the typical stationary point, essentially because a randomly
+chosen symmetric matrix is unlikely to have all $n$ eigenvalues of the same sign; work by
+Dauphin and co-authors argues that saddles, rather than poor local minima, are the main
+obstacle in training deep networks. Gradient descent escapes strict saddles from almost
+every initialisation, but it can take a very long time; gradient noise and momentum both
+help.
+
+**Plateaus.** Large regions where $\nabla J$ is small but nonzero. No stationary point is
+involved, yet progress crawls, because the step length $\eta\lVert\nabla J\rVert$ is
+proportional to a small number. Saturated sigmoid units are the classic example, and it
+is a large part of why ReLU-like activations became standard.
+
+<Callout type="warning" title="Beware of pictures with two parameters">
+Every figure in this article lives in one or two dimensions, because those are the only
+dimensions you can draw. Real parameter spaces have millions, and high-dimensional
+geometry is not merely "the same, but more". Volume concentrates far from the centre,
+almost all directions are nearly orthogonal, and the mental image of a bowl with a few
+lumps is misleading. Treat the figures as accurate illustrations of *the algorithm* and
+as rough analogies for *the landscape*.
+</Callout>
+
+## Common misconceptions
+
+<Callout type="misconception" title="“The gradient points downhill.”">
+<span class="claim">The gradient tells you which way is down.</span>
+It is the reverse: $\nabla J$ is the direction of steepest **increase** (Proposition 1).
+Descent moves along $-\nabla J$. This is why the update rule has a minus sign, and why
+deleting it turns the algorithm into gradient *ascent*.
+</Callout>
+
+<Callout type="misconception" title="“Zero gradient means we have found the minimum.”">
+<span class="claim">If the gradient is zero, training has succeeded.</span>
+A zero gradient means the point is **stationary**. It could be a local minimum, a local
+maximum, a saddle point, or a flat region. Only extra information — the Hessian, or
+global structure such as convexity — can promote "stationary" to "minimal", and only
+convexity can promote "local minimum" to "global minimum".
+</Callout>
+
+<Callout type="misconception" title="“A bigger learning rate is faster.”">
+<span class="claim">Larger steps cover ground quicker, so training finishes sooner.</span>
+Only while the linear approximation remains valid. Past the stability threshold — $2/L$
+for an $L$-smooth objective, $2/\lambda_{\max}$ for a quadratic — larger steps make the
+objective *increase*. The useful statement is that there is an optimal learning rate,
+determined by curvature, and both smaller and larger values are worse.
+</Callout>
+
+<Callout type="misconception" title="“Backpropagation and gradient descent are the same thing.”">
+<span class="claim">Backprop is how neural networks learn.</span>
+Backpropagation computes gradients; gradient descent applies them. Swapping one does not
+require swapping the other.
+</Callout>
+
+<Callout type="misconception" title="“SGD means one example at a time.”">
+<span class="claim">Stochastic gradient descent processes a single sample per update.</span>
+That is the strict original meaning, and it is not what the term denotes in practice
+today. Nearly all "SGD" in modern machine learning is mini-batch SGD with $k$ between
+about $16$ and $1024$.
+</Callout>
+
+<Callout type="misconception" title="“Gradient descent finds the best parameters.”">
+<span class="claim">Training returns the global optimum of the loss.</span>
+It returns a point where progress stopped, from one particular initialisation, under one
+particular schedule. On non-convex problems different seeds give different answers. That
+this works well enough in practice is an empirical fact about the problems we solve, not
+a guarantee from the algorithm.
+</Callout>
+
+## Summary
+
+The whole algorithm, and the facts that constrain it:
+
+<div class="table-scroll">
+
+| | |
+| --- | --- |
+| Objective | $J : \mathbb{R}^n \to \mathbb{R}$, usually $J(\theta) = \frac{1}{m}\sum_i \ell(f_\theta(x_i), y_i)$ |
+| Gradient | $\nabla J(\theta) = \bigl(\partial J/\partial\theta_1, \ldots, \partial J/\partial\theta_n\bigr)^{\!\top}$, points uphill |
+| Update | $\theta_{t+1} = \theta_t - \eta\,\nabla J(\theta_t)$ |
+| Step length | $\eta\,\lVert\nabla J(\theta_t)\rVert$ — shrinks by itself as the gradient flattens |
+| Guaranteed decrease | $J(\theta^{+}) \le J(\theta) - \eta(1 - L\eta/2)\lVert\nabla J(\theta)\rVert^2$ for $L$-smooth $J$ |
+| Stable step sizes | $0 < \eta < 2/L$; for a quadratic, $0 < \eta < 2/\lambda_{\max}$ |
+| Best fixed step (quadratic) | $\eta^{\star} = 2/(\lambda_{\min} + \lambda_{\max})$, contraction $(\kappa-1)/(\kappa+1)$ |
+| Mini-batch gradient | $g_B(\theta) = \frac{1}{k}\sum_{i \in B}\nabla_\theta \ell(f_\theta(x_i), y_i)$, unbiased, variance $\sim 1/k$ |
+| Momentum | $v_{t+1} = \beta v_t - \eta \nabla J(\theta_t)$, $\theta_{t+1} = \theta_t + v_{t+1}$; persistent directions amplified by up to $1/(1-\beta)$ |
+| Stops at | stationary points: minima, maxima, saddles — the algorithm cannot tell them apart |
+
+</div>
+
+If you remember one sentence: **gradient descent repeatedly takes a step of length
+$\eta\lVert\nabla J\rVert$ in the direction that locally decreases the loss fastest, and
+almost everything that can go wrong is a statement about the word *locally*.**
+
+## Further reading
+
+Standard references, in rough order of increasing specialisation.
+
+- M. Spivak, *Calculus*, 4th ed., Publish or Perish, 2008. Derivatives and Taylor's
+  theorem done properly.
+- S. Boyd and L. Vandenberghe, *Convex Optimization*, Cambridge University Press, 2004.
+  Chapter 9 covers descent methods, step-size rules and conditioning. Freely available
+  from the authors.
+- J. Nocedal and S. J. Wright, *Numerical Optimization*, 2nd ed., Springer, 2006. The
+  reference for line searches, quasi-Newton methods and convergence rates.
+- I. Goodfellow, Y. Bengio and A. Courville, *Deep Learning*, MIT Press, 2016. Chapter 4
+  for numerical computation, Chapter 8 for optimisation in deep learning.
+- L. Bottou, F. E. Curtis and J. Nocedal, "Optimization Methods for Large-Scale Machine
+  Learning", *SIAM Review* 60(2), 2018, 223–311. The careful survey of the batch versus
+  stochastic trade-off.
+- H. Robbins and S. Monro, "A Stochastic Approximation Method", *Annals of Mathematical
+  Statistics* 22(3), 1951, 400–407. The origin of the step-size conditions.
+- B. T. Polyak, "Some methods of speeding up the convergence of iteration methods", *USSR
+  Computational Mathematics and Mathematical Physics* 4(5), 1964, 1–17. Heavy-ball
+  momentum.
+- Y. Nesterov, "A method of solving a convex programming problem with convergence rate
+  $O(1/k^2)$", *Soviet Mathematics Doklady* 27(2), 1983, 372–376.
+- D. E. Rumelhart, G. E. Hinton and R. J. Williams, "Learning representations by
+  back-propagating errors", *Nature* 323, 1986, 533–536.
+- D. P. Kingma and J. Ba, "Adam: A Method for Stochastic Optimization", *ICLR* 2015.
+- Y. N. Dauphin, R. Pascanu, C. Gulcehre, K. Cho, S. Ganguli and Y. Bengio, "Identifying
+  and attacking the saddle point problem in high-dimensional non-convex optimization",
+  *NeurIPS* 2014.

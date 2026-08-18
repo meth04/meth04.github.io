@@ -1,0 +1,18 @@
+---
+interface Props {
+  type?: 'note' | 'insight' | 'warning' | 'misconception';
+  title?: string;
+}
+const { type = 'note', title } = Astro.props;
+const defaultTitle: Record<string, string> = {
+  note: 'Note',
+  insight: 'Idea',
+  warning: 'Careful',
+  misconception: 'Misconception',
+};
+---
+
+<aside class={`block block--${type}`}>
+  <p class="block__head"><span class="block__kind">{title ?? defaultTitle[type]}</span></p>
+  <div class="block__body"><slot /></div>
+</aside>

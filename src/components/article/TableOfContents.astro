@@ -1,0 +1,115 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+}
+const { headings } = Astro.props;
+const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{
+  items.length > 2 && (
+    <details class="toc" id="toc">
+      <summary>Contents</summary>
+      <nav aria-label="Table of contents">
+        <ol>
+          {items.map((heading) => (
+            <li class={heading.depth === 3 ? 'sub' : undefined}>
+              <a href={`#${heading.slug}`} set:html={heading.text} />
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </details>
+  )
+}
+
+<style>
+  .toc {
+    font-family: var(--f-sans);
+    font-size: var(--fs-sm);
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--c-bg-raised);
+    padding: var(--s-3) var(--s-4);
+  }
+  .toc summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--c-ink-soft);
+    list-style-position: outside;
+  }
+  .toc summary::marker {
+    color: var(--c-ink-faint);
+  }
+  .toc ol {
+    list-style: none;
+    margin: var(--s-3) 0 0;
+    padding: 0;
+    counter-reset: toc;
+    max-height: 45vh;
+    overflow-y: auto;
+  }
+  .toc li {
+    counter-increment: toc;
+    line-height: 1.4;
+  }
+  .toc li + li {
+    margin-block-start: 0.55rem;
+  }
+  .toc li.sub {
+    padding-inline-start: 1.1rem;
+    font-size: 0.94em;
+  }
+  .toc a {
+    color: var(--c-ink-muted);
+    text-decoration: none;
+    display: inline-block;
+  }
+  .toc a:hover {
+    color: var(--c-accent-deep);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
+  /* On very wide screens the contents sit in the right margin, leaving the
+     reading column exactly centred. */
+  @media (min-width: 1460px) {
+    .toc {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      left: calc(50% + var(--w-wide) / 2 + 2rem);
+      width: 14rem;
+      border: 0;
+      border-left: var(--border);
+      border-radius: 0;
+      background: none;
+      padding: 0 0 0 var(--s-4);
+      pointer-events: none;
+    }
+    .toc > * {
+      pointer-events: auto;
+    }
+    .toc summary {
+      display: none;
+    }
+    .toc nav {
+      position: sticky;
+      top: 5.5rem;
+      max-height: calc(100vh - 8rem);
+      overflow-y: auto;
+    }
+    .toc ol {
+      margin-top: 0;
+      max-height: none;
+      overflow: visible;
+    }
+  }
+  @media print {
+    .toc {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,76 @@
+/*
+  Design tokens — the single source of truth for the visual language.
+  Light mode only, by product decision.
+*/
+:root {
+  /* ---- Color: warm, paper-like, low chroma ---- */
+  --c-bg: #fbfaf7;
+  --c-bg-sunk: #f4f2ec;
+  --c-bg-raised: #ffffff;
+  --c-ink: #211f1c;
+  --c-ink-soft: #45413b;
+  --c-ink-muted: #6d675e;
+  --c-ink-faint: #928b80;
+  --c-rule: #e4e0d6;
+  --c-rule-strong: #d3cec1;
+  --c-accent: #b4552b;
+  --c-accent-deep: #8f4220;
+  --c-accent-wash: #f6ece4;
+  --c-teal: #2f6f6a;
+  --c-teal-wash: #e8f0ef;
+  --c-focus: #1f5fbf;
+
+  /* Plot palette — distinguishable without relying on hue alone */
+  --c-plot-curve: #45413b;
+  --c-plot-point: #b4552b;
+  --c-plot-path: #8f4220;
+  --c-plot-grid: #e9e5db;
+  --c-plot-axis: #a49c8f;
+  --c-plot-alt: #2f6f6a;
+  --c-plot-alt2: #6b4fa8;
+
+  /* ---- Type ---- */
+  --f-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --f-serif:
+    'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, 'Times New Roman',
+    serif;
+  --f-mono: ui-monospace, SFMono-Regular, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  --fs-xs: 0.78rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 1.9rem;
+  --fs-3xl: 2.4rem;
+
+  /* Fluid article body size: comfortable on phones, generous on desktop */
+  --fs-prose: clamp(1.0625rem, 0.98rem + 0.42vw, 1.1875rem);
+  --lh-prose: 1.7;
+
+  /* ---- Space (4px base, editorial rhythm) ---- */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4rem;
+  --s-9: 6rem;
+
+  /* ---- Measure ---- */
+  --w-prose: 39rem;
+  --w-wide: 52rem;
+  --w-page: 72rem;
+  --gutter: clamp(1.125rem, 4vw, 2.5rem);
+
+  /* ---- Misc ---- */
+  --radius: 4px;
+  --radius-lg: 6px;
+  --border: 1px solid var(--c-rule);
+  --ring: 2px solid var(--c-focus);
+  --ease: cubic-bezier(0.32, 0.72, 0.3, 1);
+}

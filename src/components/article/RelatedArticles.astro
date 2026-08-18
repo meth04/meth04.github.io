@@ -1,0 +1,66 @@
+---
+import type { Article } from '../../lib/content';
+import { articleUrl } from '../../lib/content';
+import { formatDate } from '../../lib/text';
+
+interface Props {
+  articles: Article[];
+  heading?: string;
+}
+const { articles, heading = 'Related reading' } = Astro.props;
+---
+
+{
+  articles.length > 0 && (
+    <section class="related">
+      <h2 class="eyebrow">{heading}</h2>
+      <ul>
+        {articles.map((article) => (
+          <li>
+            <a href={articleUrl(article)}>{article.data.title}</a>
+            <p>{article.data.description}</p>
+            <p class="when">{formatDate(article.data.pubDate)}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .related {
+    border-top: var(--border);
+    padding-block-start: var(--s-5);
+  }
+  .related ul {
+    list-style: none;
+    margin: var(--s-4) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-5);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  }
+  .related a {
+    font-family: var(--f-serif);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    text-decoration: none;
+    line-height: 1.3;
+  }
+  .related a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--c-accent);
+    text-underline-offset: 0.18em;
+  }
+  .related p {
+    margin-block-start: var(--s-2);
+    font-size: var(--fs-sm);
+    color: var(--c-ink-muted);
+    line-height: 1.5;
+  }
+  .related .when {
+    margin-block-start: var(--s-1);
+    color: var(--c-ink-faint);
+    font-size: var(--fs-xs);
+  }
+</style>

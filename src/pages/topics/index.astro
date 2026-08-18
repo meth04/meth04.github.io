@@ -1,0 +1,115 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getArticles, collectTopics, collectTags } from '../../lib/content';
+
+const articles = await getArticles();
+const topics = collectTopics(articles);
+const tags = collectTags(articles);
+---
+
+<BaseLayout
+  title="Topics"
+  description="Browse articles by subject area: optimization, calculus, linear algebra, probability, statistics and the mathematics of machine learning."
+>
+  <div class="page topics">
+    <h1>Topics</h1>
+    <p class="lede">
+      Topics are broad subject areas. Tags are finer-grained keywords used inside articles.
+    </p>
+
+    {
+      topics.length === 0 ? (
+        <p class="empty">No topics yet — they appear as articles are published.</p>
+      ) : (
+        <ul class="topic-list">
+          {topics.map((topic) => (
+            <li>
+              <a href={`/topics/${topic.slug}/`}>
+                <span class="topic-list__label">{topic.label}</span>
+                <span class="topic-list__count">
+                  {topic.count} article{topic.count === 1 ? '' : 's'}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    {
+      tags.length > 0 && (
+        <section class="tags">
+          <h2 class="eyebrow">Tags in use</h2>
+          <ul class="tag-list">
+            {tags.map((tag) => (
+              <li>
+                <span class="tag">{tag.label}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .topics {
+    padding-block: var(--s-7) var(--s-8);
+    max-width: calc(var(--w-wide) + var(--gutter) * 2);
+  }
+  h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(1.8rem, 1.4rem + 2vw, 2.6rem);
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+  .lede {
+    margin-block-start: var(--s-4);
+    color: var(--c-ink-soft);
+    max-width: 38em;
+  }
+  .topic-list {
+    list-style: none;
+    padding: 0;
+    margin: var(--s-6) 0 0;
+    border-top: var(--border);
+  }
+  .topic-list li {
+    border-bottom: var(--border);
+  }
+  .topic-list a {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s-4);
+    padding-block: var(--s-4);
+    text-decoration: none;
+  }
+  .topic-list__label {
+    font-family: var(--f-serif);
+    font-size: var(--fs-lg);
+    font-weight: 600;
+  }
+  .topic-list a:hover .topic-list__label {
+    text-decoration: underline;
+    text-decoration-color: var(--c-accent);
+    text-underline-offset: 0.18em;
+  }
+  .topic-list__count {
+    font-size: var(--fs-sm);
+    color: var(--c-ink-muted);
+    white-space: nowrap;
+  }
+  .tags {
+    margin-block-start: var(--s-8);
+  }
+  .tags .eyebrow {
+    display: block;
+    margin-block-end: var(--s-3);
+  }
+  .empty {
+    margin-block-start: var(--s-6);
+    color: var(--c-ink-muted);
+  }
+</style>

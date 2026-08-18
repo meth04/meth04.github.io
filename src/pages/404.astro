@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Page not found"
+  description="That page does not exist on Math in Motion."
+  noindex={true}
+>
+  <div class="page notfound">
+    <p class="eyebrow">Error 404</p>
+    <h1>That page does not exist.</h1>
+    <p class="lede">
+      The link may be out of date, or the address may have a typo in it. Nothing here is ever
+      deleted without a redirect, so it is more likely the former.
+    </p>
+    <ul class="notfound__links">
+      <li><a class="link-arrow" href="/">Homepage</a></li>
+      <li><a class="link-arrow" href="/blog/">All articles</a></li>
+      <li><a class="link-arrow" href="/topics/">Topics</a></li>
+      <li><a class="link-arrow" href="/search/">Search</a></li>
+    </ul>
+  </div>
+</BaseLayout>
+
+<style>
+  .notfound {
+    padding-block: var(--s-9) var(--s-9);
+    max-width: calc(var(--w-prose) + var(--gutter) * 2);
+  }
+  h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(1.7rem, 1.3rem + 2vw, 2.4rem);
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    margin-block-start: var(--s-3);
+  }
+  .lede {
+    margin-block-start: var(--s-4);
+    color: var(--c-ink-soft);
+    font-size: var(--fs-md);
+    line-height: 1.6;
+  }
+  .notfound__links {
+    list-style: none;
+    padding: 0;
+    margin: var(--s-6) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-5);
+  }
+</style>

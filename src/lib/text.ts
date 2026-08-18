@@ -1,0 +1,71 @@
+/** URL-safe slug: lowercase, spaces and punctuation collapsed to hyphens. */
+export function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+const WORDS_PER_MINUTE = 200;
+
+/**
+ * Estimate reading time from raw MDX source. JSX component tags, import
+ * statements, frontmatter and math delimiters are stripped first so that the
+ * estimate reflects prose rather than markup.
+ */
+export function readingTimeMinutes(source: string): number {
+  const prose = source
+    .replace(/^---[\s\S]*?---/, '')
+    .replace(/^import .*$/gm, '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\$\$[\s\S]*?\$\$/g, ' equation ')
+    .replace(/\$[^$\n]+\$/g, ' term ')
+    .replace(/[#*_>`|-]/g, ' ');
+  const words = prose.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
+}
+
+/** Plain text extracted from MDX, used for the client-side search index. */
+export function toSearchText(source: string): string {
+  return source
+    .replace(/^---[\s\S]*?---/, '')
+    .replace(/^import .*$/gm, '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\$\$[\s\S]*?\$\$/g, ' ')
+    .replace(/\$([^$\n]+)\$/g, '$1')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[#*_>`|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * The distinct words of a text, space separated and sorted. Used as the
+ * searchable body so that the index scales with vocabulary, not article length.
+ */
+export function vocabulary(text: string): string {
+  const words = new Set(
+    text
+      .toLowerCase()
+      .split(/[^a-z0-9'’]+/)
+      .filter((word) => word.length > 1),
+  );
+  return [...words].sort().join(' ');
+}
+
+export function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+export function isoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}

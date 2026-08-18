@@ -1,0 +1,19 @@
+---
+interface Props {
+  kind?: 'Theorem' | 'Lemma' | 'Proposition' | 'Corollary' | 'Fact';
+  /** Number shown after the kind, so the prose can refer to it. */
+  number?: number;
+  name?: string;
+  id?: string;
+}
+const { kind = 'Theorem', number, name, id } = Astro.props;
+---
+
+<section class="block block--theorem" id={id}>
+  <p class="block__head">
+    <span class="block__kind">{number ? `${kind} ${number}` : kind}</span>{
+      name && <span class="block__name">{name}</span>
+    }
+  </p>
+  <div class="block__body"><slot /></div>
+</section>

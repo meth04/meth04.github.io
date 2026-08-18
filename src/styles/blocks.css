@@ -1,0 +1,119 @@
+/*
+  Structured article blocks: callouts, definitions, theorems, proofs.
+  Global (not scoped) because their bodies are slotted MDX content.
+*/
+.block {
+  border: var(--border);
+  border-left: 2px solid var(--c-rule-strong);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--c-bg-raised);
+  padding: var(--s-4) var(--s-5);
+  font-size: 0.96em;
+}
+.block > * + * {
+  margin-block-start: var(--s-4);
+}
+.block__head {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--c-ink);
+  margin-block-end: var(--s-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45em;
+  align-items: baseline;
+}
+.block__head .block__kind {
+  color: var(--c-accent-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: var(--fs-xs);
+}
+.block__head .block__name {
+  font-weight: 500;
+  color: var(--c-ink-muted);
+  font-style: italic;
+}
+.block p:last-child,
+.block ul:last-child,
+.block ol:last-child {
+  margin-block-end: 0;
+}
+
+/* Definitions and theorems read as displayed statements. */
+.block--definition {
+  border-left-color: var(--c-accent);
+  background: var(--c-bg-raised);
+}
+.block--theorem {
+  border-left-color: var(--c-teal);
+}
+.block--theorem .block__body {
+  font-style: italic;
+}
+.block--theorem .block__body .katex {
+  font-style: normal;
+}
+.block--proof {
+  border: 0;
+  border-left: 2px solid var(--c-rule);
+  border-radius: 0;
+  background: none;
+  padding: var(--s-2) 0 var(--s-2) var(--s-5);
+  color: var(--c-ink-soft);
+}
+.block--proof .block__kind {
+  color: var(--c-ink-muted);
+}
+.block--proof .qed {
+  float: right;
+  color: var(--c-ink-faint);
+  margin-left: 0.5em;
+}
+
+/* Callouts */
+.block--note {
+  border-left-color: var(--c-teal);
+  background: var(--c-teal-wash);
+}
+.block--insight {
+  border-left-color: var(--c-accent);
+  background: var(--c-accent-wash);
+}
+.block--warning {
+  border-left-color: var(--c-accent-deep);
+  background: var(--c-accent-wash);
+}
+.block--misconception {
+  border-left-color: var(--c-accent-deep);
+  background: var(--c-bg-raised);
+}
+.block--misconception .block__head .block__kind {
+  color: var(--c-accent-deep);
+}
+
+/* A tight "claim → correction" pair used in the misconceptions section. */
+.claim {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-muted);
+  display: block;
+  margin-block-end: var(--s-2);
+}
+.claim::before {
+  content: '“';
+}
+.claim::after {
+  content: '”';
+}
+
+@media (max-width: 480px) {
+  .block {
+    padding: var(--s-4);
+  }
+  .block--proof {
+    padding-inline-start: var(--s-4);
+  }
+}

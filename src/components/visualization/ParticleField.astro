@@ -1,0 +1,41 @@
+---
+/**
+ * Decorative drifting-dot field. Purely ornamental, hidden from assistive
+ * technology, and loaded only when the browser is idle.
+ */
+---
+
+<div class="particle-field" aria-hidden="true">
+  <canvas data-particles></canvas>
+</div>
+
+<script>
+  const canvas = document.querySelector<HTMLCanvasElement>('canvas[data-particles]');
+  if (canvas && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const start = () => {
+      void import('../../lib/visualization/particles').then((m) => m.mount(canvas));
+    };
+    const idle = (window as unknown as { requestIdleCallback?: typeof requestIdleCallback })
+      .requestIdleCallback;
+    if (typeof idle === 'function') {
+      idle(start, { timeout: 2500 });
+    } else {
+      window.addEventListener('load', () => window.setTimeout(start, 400), { once: true });
+    }
+  }
+</script>
+
+<style>
+  .particle-field {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .particle-field canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>

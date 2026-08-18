@@ -1,0 +1,89 @@
+---
+import type { Article } from '../../lib/content';
+import { articleUrl } from '../../lib/content';
+import { formatDate, isoDate, readingTimeMinutes } from '../../lib/text';
+
+interface Props {
+  article: Article;
+  /** Larger treatment used for the featured article on the homepage. */
+  size?: 'default' | 'lead';
+  /** Heading level, so the card fits the surrounding document outline. */
+  level?: 2 | 3;
+}
+const { article, size = 'default', level = 3 } = Astro.props;
+const Heading = `h${level}` as 'h2' | 'h3';
+const { title, description, pubDate, topics } = article.data;
+const minutes = readingTimeMinutes(article.body ?? '');
+---
+
+<article class:list={['card', size === 'lead' && 'card--lead']}>
+  <Heading class="card__title">
+    <a href={articleUrl(article)}>{title}</a>
+  </Heading>
+  <p class="card__meta">
+    <time datetime={isoDate(pubDate)}>{formatDate(pubDate)}</time>
+    <span aria-hidden="true">·</span>
+    <span>{minutes} min read</span>
+    {
+      topics.length > 0 && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{topics.join(', ')}</span>
+        </>
+      )
+    }
+  </p>
+  <p class="card__desc">{description}</p>
+</article>
+
+<style>
+  .card {
+    padding-block: var(--s-5);
+    border-top: var(--border);
+  }
+  .card__title {
+    font-family: var(--f-serif);
+    font-size: clamp(1.2rem, 1.05rem + 0.7vw, 1.45rem);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .card__title a {
+    text-decoration: none;
+    background-image: linear-gradient(var(--c-accent), var(--c-accent));
+    background-size: 0% 1px;
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    transition: background-size 220ms var(--ease);
+  }
+  .card__title a:hover {
+    background-size: 100% 1px;
+  }
+  .card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    font-size: var(--fs-sm);
+    color: var(--c-ink-muted);
+    margin-block-start: var(--s-2);
+  }
+  .card__desc {
+    margin-block-start: var(--s-3);
+    color: var(--c-ink-soft);
+    max-width: 42rem;
+    font-size: var(--fs-md);
+    line-height: 1.6;
+  }
+  .card--lead {
+    border-top: 2px solid var(--c-ink);
+    padding-block-start: var(--s-4);
+  }
+  .card--lead .card__title {
+    font-size: clamp(1.55rem, 1.2rem + 1.8vw, 2.15rem);
+  }
+  .card--lead .card__desc {
+    font-size: var(--fs-lg);
+    line-height: 1.55;
+  }
+</style>

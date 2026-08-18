@@ -1,0 +1,23 @@
+---
+/** A static (non-interactive) figure: SVG or image plus caption. */
+interface Props {
+  label?: string;
+  title?: string;
+  breakout?: boolean;
+  id?: string;
+}
+const { label, title, breakout = false, id } = Astro.props;
+---
+
+<figure class={`figure${breakout ? ' breakout' : ''}`} id={id}>
+  {
+    (label || title) && (
+      <div class="figure__head">
+        {label && <p class="figure__label">{label}</p>}
+        {title && <p class="figure__title">{title}</p>}
+      </div>
+    )
+  }
+  <div class="figure__body"><slot /></div>
+  <figcaption class="figure__caption"><slot name="caption" /></figcaption>
+</figure>

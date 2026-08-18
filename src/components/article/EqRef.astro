@@ -1,0 +1,9 @@
+---
+interface Props {
+  id: string;
+  number: number;
+}
+const { id, number } = Astro.props;
+---
+
+<a class="eq-ref" href={`#${id}`}>equation&nbsp;({number})</a>

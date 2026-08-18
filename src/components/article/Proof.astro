@@ -1,0 +1,14 @@
+---
+interface Props {
+  label?: string;
+}
+const { label = 'Proof' } = Astro.props;
+---
+
+<section class="block block--proof">
+  <p class="block__head"><span class="block__kind">{label}</span></p>
+  <div class="block__body">
+    <slot />
+    <span class="qed" aria-label="end of proof">□</span>
+  </div>
+</section>

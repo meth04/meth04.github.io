@@ -1,0 +1,20 @@
+---
+interface Props {
+  /** Equation number shown at the right margin, e.g. 3 */
+  number?: number;
+  /** Anchor id, referenced by <EqRef>. */
+  id?: string;
+}
+const { number, id } = Astro.props;
+---
+
+<div class={number ? 'equation' : undefined} id={id}>
+  <slot />
+  {
+    number && (
+      <span class="eq-number" aria-hidden="true">
+        ({number})
+      </span>
+    )
+  }
+</div>

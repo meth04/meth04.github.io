@@ -1,0 +1,324 @@
+/*
+  Long-form article typography.
+  The prose column is a narrow reading measure; figures may break out wider
+  using the `.breakout` class, without any wrapper divs or negative margins.
+*/
+.prose {
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(var(--gutter), 1fr)
+    [wide-start] minmax(0, calc((var(--w-wide) - var(--w-prose)) / 2))
+    [prose-start] min(100% - (var(--gutter) * 2), var(--w-prose)) [prose-end]
+    minmax(0, calc((var(--w-wide) - var(--w-prose)) / 2)) [wide-end]
+    minmax(var(--gutter), 1fr) [full-end];
+  font-family: var(--f-serif);
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+  color: var(--c-ink);
+}
+.prose > * {
+  grid-column: prose;
+  min-width: 0;
+}
+.prose > .breakout {
+  grid-column: wide;
+}
+
+/* ---- Vertical rhythm ---- */
+.prose > * + * {
+  margin-block-start: var(--s-5);
+}
+.prose > p + p {
+  margin-block-start: var(--s-4);
+}
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: var(--f-sans);
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.25;
+  color: var(--c-ink);
+  text-wrap: balance;
+}
+.prose > h2 {
+  font-size: clamp(1.4rem, 1.2rem + 1vw, 1.72rem);
+  margin-block-start: var(--s-8);
+  padding-block-start: var(--s-4);
+  border-top: var(--border);
+}
+.prose > h3 {
+  font-size: clamp(1.14rem, 1.05rem + 0.5vw, 1.28rem);
+  margin-block-start: var(--s-7);
+}
+.prose > h4 {
+  font-size: 1.02rem;
+  margin-block-start: var(--s-6);
+  color: var(--c-ink-soft);
+}
+.prose > h2 + *,
+.prose > h3 + *,
+.prose > h4 + * {
+  margin-block-start: var(--s-3);
+}
+
+/* Heading anchors: visible on hover/focus, never announced as content. */
+.prose .heading-anchor {
+  float: left;
+  margin-left: -1.1em;
+  width: 1.1em;
+  color: var(--c-ink-faint);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 120ms var(--ease);
+  font-family: var(--f-sans);
+  font-weight: 400;
+}
+.prose :is(h2, h3, h4):hover .heading-anchor,
+.prose .heading-anchor:focus-visible {
+  opacity: 1;
+}
+@media (max-width: 900px) {
+  .prose .heading-anchor {
+    display: none;
+  }
+}
+
+/* ---- Inline ---- */
+.prose a {
+  color: var(--c-accent-deep);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--c-accent) 40%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+.prose a:hover {
+  text-decoration-color: var(--c-accent);
+}
+.prose strong {
+  font-weight: 650;
+}
+.prose em {
+  font-style: italic;
+}
+.prose abbr {
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+/* ---- Lists ---- */
+.prose ul,
+.prose ol {
+  padding-inline-start: 1.35em;
+}
+.prose li + li {
+  margin-block-start: var(--s-2);
+}
+.prose li > ul,
+.prose li > ol {
+  margin-block-start: var(--s-2);
+}
+.prose ul {
+  list-style: none;
+  padding-inline-start: 1.15em;
+}
+.prose ul > li {
+  position: relative;
+}
+.prose ul > li::before {
+  content: '';
+  position: absolute;
+  left: -0.95em;
+  top: 0.72em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--c-rule-strong);
+}
+.prose ol > li::marker {
+  color: var(--c-ink-faint);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--f-sans);
+  font-size: 0.9em;
+}
+.prose dl dt {
+  font-weight: 650;
+}
+.prose dl dd {
+  margin-inline-start: 1.2em;
+}
+
+/* ---- Blockquote ---- */
+.prose blockquote {
+  border-inline-start: 2px solid var(--c-rule-strong);
+  padding-inline-start: var(--s-5);
+  color: var(--c-ink-soft);
+  font-style: italic;
+}
+.prose blockquote p + p {
+  margin-block-start: var(--s-4);
+}
+
+/* ---- Code ---- */
+.prose code {
+  font-family: var(--f-mono);
+  font-size: 0.87em;
+  background: var(--c-bg-sunk);
+  border: 1px solid color-mix(in srgb, var(--c-rule) 70%, transparent);
+  border-radius: 3px;
+  padding: 0.1em 0.32em;
+}
+.prose pre {
+  background: var(--c-bg-sunk);
+  border: var(--border);
+  border-radius: var(--radius);
+  padding: var(--s-4) var(--s-5);
+  overflow-x: auto;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  /* Long code lines scroll inside the block instead of widening the page. */
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  tab-size: 2;
+}
+.prose pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+.prose figure.code-figure {
+  margin: 0;
+}
+
+/* ---- Tables ---- */
+.prose .table-scroll {
+  overflow-x: auto;
+  border: var(--border);
+  border-radius: var(--radius);
+  background: var(--c-bg-raised);
+}
+.prose table {
+  border-collapse: collapse;
+  width: 100%;
+  /* Keep columns readable on phones: the wrapper scrolls rather than letting
+     cells collapse to one word per line. */
+  min-width: 32rem;
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.prose th,
+.prose td {
+  text-align: left;
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--c-rule);
+  vertical-align: top;
+}
+.prose thead th {
+  font-weight: 600;
+  color: var(--c-ink-soft);
+  background: var(--c-bg-sunk);
+}
+/* First column carries the row label; give it room before the others. */
+.prose tbody th:first-child,
+.prose tbody td:first-child {
+  min-width: 9rem;
+}
+.prose tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ---- Figures & captions ---- */
+.prose figure {
+  margin: 0;
+}
+.prose figcaption {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--c-ink-muted);
+  margin-block-start: var(--s-3);
+}
+.prose figcaption b,
+.prose figcaption strong {
+  color: var(--c-ink-soft);
+  font-weight: 600;
+}
+
+/* ---- Math (KaTeX) ---- */
+.prose .katex {
+  font-size: 1.045em;
+}
+.prose .katex-display {
+  margin: var(--s-5) 0;
+  /* Wide equations scroll horizontally rather than overflowing the viewport. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.35em;
+  padding-inline: 2px;
+}
+/* KaTeX must not break a display equation mid-symbol; wide equations scroll
+   inside their own box instead. */
+.prose .katex-display > .katex {
+  white-space: nowrap;
+}
+/* Numbered / referenceable equations */
+.prose .equation {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+}
+.prose .equation .katex-display {
+  margin: 0;
+}
+.prose .equation .eq-number {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.prose .eq-ref {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- Footnotes (remark-gfm output) ---- */
+.prose .footnotes {
+  font-size: 0.92em;
+  color: var(--c-ink-soft);
+  border-top: var(--border);
+  padding-block-start: var(--s-4);
+  margin-block-start: var(--s-8);
+}
+.prose .footnotes h2 {
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 0;
+  padding: 0;
+  margin-block-end: var(--s-3);
+  color: var(--c-ink-muted);
+}
+.prose .footnotes ol {
+  padding-inline-start: 1.2em;
+}
+.prose sup a[data-footnote-ref] {
+  text-decoration: none;
+  font-family: var(--f-sans);
+  font-size: 0.72em;
+  padding-inline: 0.12em;
+}
+
+/* ---- Narrow screens ---- */
+@media (max-width: 480px) {
+  .prose pre {
+    padding: var(--s-3) var(--s-4);
+    font-size: 0.8125rem;
+  }
+  .prose blockquote {
+    padding-inline-start: var(--s-4);
+  }
+}

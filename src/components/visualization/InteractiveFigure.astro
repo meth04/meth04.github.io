@@ -1,0 +1,72 @@
+---
+/**
+ * Chrome shared by every interactive figure: label, title, "how to use" hint,
+ * the mount point for the visualization module, a caption that always states
+ * what the reader should notice, and a no-JavaScript fallback.
+ *
+ * `viz` names the module the client-side loader lazily imports once the figure
+ * approaches the viewport.
+ */
+interface Props {
+  id: string;
+  label: string;
+  title: string;
+  hint: string;
+  /** Registry key in src/lib/visualization/registry.ts */
+  viz: string;
+  /** Serialized options handed to the visualization module. */
+  options?: Record<string, unknown>;
+  breakout?: boolean;
+  /**
+   * Height in pixels to reserve for the graphic before its module mounts, on
+   * wide and narrow screens respectively. Measured from the built figure; the
+   * point is only to keep the text below from jumping.
+   */
+  reserve?: [wide: number, narrow: number];
+}
+const {
+  id,
+  label,
+  title,
+  hint,
+  viz,
+  options,
+  breakout = true,
+  reserve = [680, 800],
+} = Astro.props;
+const describedBy = `${id}-caption`;
+const reserveStyle = `--viz-reserve:${reserve[0]}px;--viz-reserve-narrow:${reserve[1]}px`;
+---
+
+<figure class={`figure${breakout ? ' breakout' : ''}`} id={id}>
+  <div class="figure__head">
+    <p class="figure__label">{label}</p>
+    <p class="figure__title">{title}</p>
+    <p class="figure__hint">{hint}</p>
+  </div>
+  <div class="figure__body">
+    <div
+      class="viz-plot"
+      data-viz={viz}
+      data-describedby={describedBy}
+      data-options={options ? JSON.stringify(options) : undefined}
+      style={reserveStyle}
+    >
+    </div>
+  </div>
+  <figcaption class="figure__caption" id={describedBy}><slot /></figcaption>
+  <noscript>
+    <p class="figure__fallback">
+      This figure is interactive and needs JavaScript. The caption above states the result it
+      demonstrates, and the surrounding text derives it in full, so nothing mathematical is lost.
+    </p>
+  </noscript>
+</figure>
+
+<script>
+  // One shared loader for every interactive figure on the page. Astro hoists
+  // and de-duplicates this script, so it runs once no matter how many figures
+  // the article contains.
+  import { initVisualizations } from '../../lib/visualization/registry';
+  initVisualizations();
+</script>

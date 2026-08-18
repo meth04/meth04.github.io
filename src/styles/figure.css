@@ -1,0 +1,394 @@
+/*
+  Interactive figure chrome. These rules are global because visualization DOM
+  is created at runtime by TypeScript modules (scoped styles would not match).
+*/
+.figure {
+  margin-block: var(--s-7);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--c-bg-raised);
+  overflow: clip;
+}
+.figure__head {
+  padding: var(--s-4) var(--s-5) 0;
+  font-family: var(--f-sans);
+}
+.figure__label {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-accent-deep);
+  font-weight: 600;
+}
+.figure__title {
+  font-family: var(--f-sans);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.35;
+  margin-block-start: var(--s-1);
+  color: var(--c-ink);
+}
+.figure__hint {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-muted);
+  margin-block-start: var(--s-2);
+  line-height: 1.5;
+}
+.figure__body {
+  padding: var(--s-4) var(--s-5) var(--s-5);
+}
+.figure__caption {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--c-ink-muted);
+  padding: var(--s-4) var(--s-5);
+  border-top: var(--border);
+  background: var(--c-bg-sunk);
+  margin: 0;
+}
+.figure__caption strong {
+  color: var(--c-ink-soft);
+  font-weight: 600;
+}
+.figure__fallback {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-soft);
+  background: var(--c-accent-wash);
+  border-top: var(--border);
+  padding: var(--s-4) var(--s-5);
+  margin: 0;
+}
+
+/* ---------- The graphic ---------- */
+.viz-plot {
+  width: 100%;
+}
+/* Reserve space before the module mounts so nothing below jumps. */
+.viz-plot:empty {
+  min-height: var(--viz-reserve, 680px);
+}
+@media (max-width: 640px) {
+  .viz-plot:empty {
+    min-height: var(--viz-reserve-narrow, var(--viz-reserve, 800px));
+  }
+}
+.viz-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: manipulation;
+  font-family: var(--f-sans);
+}
+.viz-svg text {
+  fill: var(--c-ink-muted);
+}
+.viz-svg .tick {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  fill: var(--c-ink-faint);
+}
+.viz-svg .axis-label {
+  font-size: 11px;
+  fill: var(--c-ink-muted);
+  font-style: italic;
+}
+.viz-grid line {
+  stroke: var(--c-plot-grid);
+  stroke-width: 1;
+}
+.viz-axes .axis {
+  stroke: var(--c-plot-axis);
+  stroke-width: 1;
+}
+.viz-curve {
+  fill: none;
+  stroke: var(--c-plot-curve);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.viz-path {
+  fill: none;
+  stroke: var(--c-plot-path);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+.viz-point {
+  fill: var(--c-plot-point);
+  stroke: var(--c-bg-raised);
+  stroke-width: 2;
+}
+.viz-ghost {
+  fill: none;
+  stroke: var(--c-plot-path);
+  stroke-width: 1;
+  opacity: 0.35;
+}
+.viz-contour {
+  fill: none;
+  stroke: var(--c-plot-axis);
+  stroke-width: 1;
+}
+.viz-vector {
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+}
+.viz-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  font-family: var(--f-sans);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  margin-block-start: var(--s-3);
+  list-style: none;
+  padding: 0;
+}
+.viz-legend li::before,
+.viz-readout li::before,
+.viz-multi li::before {
+  content: none !important;
+  display: none !important;
+}
+.viz-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.viz-legend .swatch {
+  width: 1.1rem;
+  height: 0;
+  border-top-width: 2px;
+  border-top-style: solid;
+  flex: none;
+}
+.viz-legend .swatch--dash {
+  border-top-style: dashed;
+}
+
+/* ---------- Controls ---------- */
+.viz-controls {
+  display: grid;
+  gap: var(--s-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  margin-block-start: var(--s-4);
+  padding-block-start: var(--s-4);
+  border-top: var(--border);
+  font-family: var(--f-sans);
+}
+.viz-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.viz-control__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-3);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-soft);
+}
+.viz-control__value {
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+.viz-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
+  margin-block-start: var(--s-4);
+  font-family: var(--f-sans);
+}
+.viz-btn {
+  appearance: none;
+  border: var(--border);
+  background: var(--c-bg-raised);
+  color: var(--c-ink-soft);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.9rem;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  min-height: 2.5rem;
+  transition:
+    background 120ms var(--ease),
+    border-color 120ms var(--ease);
+}
+.viz-btn:hover {
+  background: var(--c-bg-sunk);
+  border-color: var(--c-rule-strong);
+}
+.viz-btn[data-variant='primary'] {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: #fff;
+}
+.viz-btn[data-variant='primary']:hover {
+  background: var(--c-accent-deep);
+  border-color: var(--c-accent-deep);
+}
+.viz-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Range inputs: consistent, high-contrast, 44px touch target. */
+.viz-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  height: 1.75rem;
+  margin: 0;
+  cursor: pointer;
+}
+.viz-range::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--c-rule-strong);
+  border-radius: 2px;
+}
+.viz-range::-moz-range-track {
+  height: 3px;
+  background: var(--c-rule-strong);
+  border-radius: 2px;
+}
+.viz-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7.5px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  border: 2px solid var(--c-bg-raised);
+  box-shadow: 0 0 0 1px var(--c-rule-strong);
+}
+.viz-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  border: 2px solid var(--c-bg-raised);
+  box-shadow: 0 0 0 1px var(--c-rule-strong);
+}
+.viz-range:focus-visible {
+  outline: var(--ring);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* ---------- Live numeric readout ---------- */
+.viz-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-6);
+  margin: 0;
+  margin-block-start: var(--s-4);
+  padding-block-start: var(--s-4);
+  border-top: var(--border);
+  font-family: var(--f-sans);
+}
+.viz-readout > div {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.viz-readout dt {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  letter-spacing: 0.02em;
+}
+.viz-readout dd {
+  margin: 0.15rem 0 0;
+  font-size: var(--fs-md);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink);
+  font-weight: 600;
+}
+.viz-readout dd small {
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--c-ink-muted);
+}
+.viz-status {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  color: var(--c-ink-muted);
+  margin-block-start: var(--s-3);
+  min-height: 1.4em;
+}
+.viz-status[data-tone='warn'] {
+  color: var(--c-accent-deep);
+}
+
+.viz-select {
+  font-size: var(--fs-sm);
+  padding: 0.45rem 0.6rem;
+  border: var(--border);
+  border-radius: var(--radius);
+  background: var(--c-bg-raised);
+  min-height: 2.5rem;
+}
+
+@media (max-width: 520px) {
+  .figure__head,
+  .figure__body,
+  .figure__caption,
+  .figure__fallback {
+    padding-inline: var(--s-4);
+  }
+  .viz-controls {
+    grid-template-columns: 1fr;
+    gap: var(--s-3);
+  }
+  .viz-readout {
+    gap: var(--s-3) var(--s-5);
+  }
+  .viz-readout > div {
+    flex: 1 0 40%;
+  }
+}
+
+/* ---------- Multi-panel figures ---------- */
+.viz-multi {
+  display: grid;
+  gap: var(--s-5);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.viz-multi__item {
+  min-width: 0;
+}
+.viz-multi__title {
+  font-family: var(--f-sans);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-ink);
+  margin: 0 0 var(--s-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+.viz-multi__verdict {
+  font-weight: 400;
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.viz-multi__caption {
+  font-family: var(--f-sans);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  margin: var(--s-2) 0 0;
+  font-variant-numeric: tabular-nums;
+}

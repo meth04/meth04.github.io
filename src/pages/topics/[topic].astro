@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleCard from '../../components/article/ArticleCard.astro';
+import { getArticles, collectTopics, articlesInTopic } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const articles = await getArticles();
+  return collectTopics(articles).map((topic) => ({
+    params: { topic: topic.slug },
+    props: { topic, articles: articlesInTopic(articles, topic.slug) },
+  }));
+}
+
+const { topic, articles } = Astro.props;
+---
+
+<BaseLayout
+  title={topic.label}
+  description={`Articles about ${topic.label.toLowerCase()} — explained with prose, proofs and interactive visualizations.`}
+>
+  <div class="page topic">
+    <p class="eyebrow"><a href="/topics/">Topics</a></p>
+    <h1>{topic.label}</h1>
+    <p class="lede">
+      {articles.length} article{articles.length === 1 ? '' : 's'} in this topic.
+    </p>
+    <div class="topic__list">
+      {articles.map((article) => <ArticleCard article={article} level={2} />)}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .topic {
+    padding-block: var(--s-7) var(--s-8);
+    max-width: calc(var(--w-wide) + var(--gutter) * 2);
+  }
+  .eyebrow a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .eyebrow a:hover {
+    color: var(--c-accent-deep);
+  }
+  h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(1.8rem, 1.4rem + 2vw, 2.6rem);
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    margin-block-start: var(--s-2);
+  }
+  .lede {
+    margin-block-start: var(--s-3);
+    color: var(--c-ink-muted);
+  }
+  .topic__list {
+    margin-block-start: var(--s-6);
+  }
+</style>

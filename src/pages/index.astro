@@ -1,0 +1,163 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArticleCard from '../components/article/ArticleCard.astro';
+import ParticleField from '../components/visualization/ParticleField.astro';
+import { getArticles, collectTopics, articleUrl } from '../lib/content';
+import { SITE_TITLE, SITE_DESCRIPTION, AUTHOR } from '../consts';
+
+const articles = await getArticles();
+const featured = articles.find((a) => a.data.featured) ?? articles[0];
+const recent = articles.filter((a) => a.id !== featured?.id).slice(0, 4);
+const topics = collectTopics(articles);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  url: 'https://meth04.github.io/',
+  author: { '@type': 'Person', name: AUTHOR },
+};
+---
+
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION} jsonLd={jsonLd}>
+  <section class="hero">
+    <ParticleField />
+    <div class="page hero__inner">
+      <p class="eyebrow">Written by {AUTHOR}</p>
+      <h1>Mathematics, explained and made interactive.</h1>
+      <p class="hero__statement">
+        Essays on the mathematics behind machine learning — calculus, linear algebra, probability
+        and optimization — written to be read carefully, with diagrams you can pull apart and
+        rebuild. Every article stands on its own mathematics: the visualizations illustrate the
+        argument, they never replace it.
+      </p>
+      <p class="hero__links">
+        <a class="link-arrow" href="/blog/">Read the articles</a>
+        <a class="link-arrow" href="/about/">About this site</a>
+      </p>
+    </div>
+  </section>
+
+  <div class="page home">
+    {
+      featured && (
+        <section class="home__block">
+          <h2 class="eyebrow">Start here</h2>
+          <ArticleCard article={featured} size="lead" />
+          <p class="home__more">
+            <a class="link-arrow" href={articleUrl(featured)}>
+              Read “{featured.data.title}”
+            </a>
+          </p>
+        </section>
+      )
+    }
+
+    {
+      recent.length > 0 && (
+        <section class="home__block">
+          <h2 class="eyebrow">Recent writing</h2>
+          <div>
+            {recent.map((article) => (
+              <ArticleCard article={article} />
+            ))}
+          </div>
+          <p class="home__more">
+            <a class="link-arrow" href="/blog/">
+              All articles
+            </a>
+          </p>
+        </section>
+      )
+    }
+
+    {
+      articles.length === 0 && (
+        <section class="home__block">
+          <p class="home__empty">
+            The first article is being written. In the meantime, the{' '}
+            <a href="/about/">about page</a>
+            explains what this site is for.
+          </p>
+        </section>
+      )
+    }
+
+    {
+      topics.length > 0 && (
+        <section class="home__block">
+          <h2 class="eyebrow">Topics</h2>
+          <ul class="tag-list home__topics">
+            {topics.map((topic) => (
+              <li>
+                <a class="tag" href={`/topics/${topic.slug}/`}>
+                  {topic.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .hero {
+    position: relative;
+    border-bottom: var(--border);
+    overflow: hidden;
+  }
+  .hero__inner {
+    position: relative;
+    z-index: 1;
+    padding-block: clamp(var(--s-7), 8vw, var(--s-9)) var(--s-8);
+    max-width: calc(var(--w-wide) + var(--gutter) * 2);
+  }
+  .hero h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(2rem, 1.4rem + 3.2vw, 3.25rem);
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    font-weight: 600;
+    margin-block-start: var(--s-4);
+    max-width: 15em;
+    text-wrap: balance;
+  }
+  .hero__statement {
+    margin-block-start: var(--s-5);
+    font-family: var(--f-serif);
+    font-size: clamp(1.05rem, 1rem + 0.5vw, 1.2rem);
+    line-height: 1.6;
+    color: var(--c-ink-soft);
+    max-width: 34em;
+  }
+  .hero__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-5);
+    margin-block-start: var(--s-6);
+  }
+
+  .home {
+    max-width: calc(var(--w-wide) + var(--gutter) * 2);
+    padding-block: var(--s-8) var(--s-8);
+  }
+  .home__block + .home__block {
+    margin-block-start: var(--s-8);
+  }
+  .home__block > .eyebrow {
+    display: block;
+    margin-block-end: var(--s-4);
+  }
+  .home__more {
+    margin-block-start: var(--s-4);
+  }
+  .home__topics {
+    margin-block-start: var(--s-2);
+  }
+  .home__empty {
+    color: var(--c-ink-muted);
+  }
+</style>

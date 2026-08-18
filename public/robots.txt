@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://meth04.github.io/sitemap-index.xml
